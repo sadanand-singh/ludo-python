@@ -16,7 +16,8 @@ Last edited: August 2017
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from gui import NewGameDialog, Figure
+from PyQt5.QtCore import QPointF
+from gui import NewGameDialog, Figure, DiceWidget
 from board import Board
 import resources
 
@@ -82,6 +83,12 @@ class Ludo(QMainWindow):
         self.statusBar().addPermanentWidget(self.statusLabel)
 
         self.add_figures()
+
+        self.dice = DiceWidget()
+        dicePos = self.board.getDiceBox().boundingRect().topLeft()
+        dicePos -= QPointF(10, 10)
+        self.dice.setPos(dicePos)
+        self.board.getScene().addItem(self.dice)
 
         self.setWindowTitle('Ludo')
         self.show()

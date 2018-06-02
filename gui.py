@@ -2,8 +2,62 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import resources
+import random
 
-class Figure(QGraphicsEllipseItem, QObject):
+class DiceWidget(QGraphicsPixmapItem):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.enabled = False
+        random.seed(1234)
+        self.c = Communicate()
+        self.images = []
+        self.images.append(QPixmap(":/images/dice"))
+        self.images.append(QPixmap(":/images/dice1"))
+        self.images.append(QPixmap(":/images/dice2"))
+        self.images.append(QPixmap(":/images/dice3"))
+        self.images.append(QPixmap(":/images/dice4"))
+        self.images.append(QPixmap(":/images/dice5"))
+        self.images.append(QPixmap(":/images/dice6"))
+        self.setPixmap(self.images[0])
+        self.dice = 0
+        self.graphicsRotation = QGraphicsRotation()
+        self.graphicsRotation.setAxis(Qt.YAxis)
+        self.graphicsRotation.setAngle(0)
+        self.graphicsRotation.setOrigin(QVector3D(QPointF(35, 35)))
+        self.setTransformations([self.graphicsRotation])
+
+        self.animation = QPropertyAnimation(self.graphicsRotation, b"angle")
+        self.animation.setDuration(500)
+        self.animation.setStartValue(self.graphicsRotation.angle())
+        self.animation.setEndValue(360)
+        self.animation.finished.connect(self.throwDice)
+
+    def mousePressEvent(self, mouse_event):
+        if not self.enabled: return
+        QGraphicsPixmapItem.mousePressEvent(mouse_event)
+
+    def throwDice(self):
+        self.dice = random.randint(1, 6)
+        self.setPixmap(self.images[self.dice])
+        self.enabled = False
+        self.c.diceRolled.emit(self.dice)
+
+    def resetDice(self):
+        self.setPixmap(self.images[0])
+        self.enabled = True
+
+    def roll(self):
+        if not self.enabled: return
+        self.setPixmap(self.images[0])
+        self.animation.start()
+
+    def setEnabled(self, enabled):
+        self.enabled = enabled
+
+    def value(self):
+        return self.dice
+
+class Figure(QGraphicsEllipseItem):
     def __init__(self, diameter, parent=None):
         super().__init__(0.0, 0.0, diameter, diameter, parent)
         self.diameter = diameter
@@ -15,8 +69,8 @@ class Figure(QGraphicsEllipseItem, QObject):
         self.setAcceptHoverEvents(True)
         self.setPen(QPen(Qt.black, 2.0))
         self.c = Communicate()
-        self.c.enter.connect(self.c.hilightField)
-        self.c.leave.connect(self.c.unhilightField)
+        self.c.enter.connect(self.hilightField)
+        self.c.leave.connect(self.unhilightField)
 
     def hoverEnterEvent(self, event):
         if not self.enabled: return
@@ -29,6 +83,21 @@ class Figure(QGraphicsEllipseItem, QObject):
     def mousePressEvent(self, mouse_event):
         if not self.enabled: return
         self.c.clicked.emit(self)
+
+    def hilightField(self, fig):
+        pos = fig.getResultPosition()
+        if pos is not None:
+            scene = pos.scene()
+            fig.hilight = scene.addRect(pos.boundingRect())
+            color = fig.getColor()
+            fig.hilight.setPen(QPen(color, 4.0))
+
+    def unhilightField(self, fig):
+        if fig.hilight is not None:
+            pos = fig.getResultPosition()
+            scene = pos.scene()
+            scene.removeItem(fig.hilight)
+            fig.hilight = None
 
     def setEnabled(self, enabled):
         self.enabled = enabled
@@ -49,7 +118,7 @@ class Figure(QGraphicsEllipseItem, QObject):
         self.setBrush(QBrush(self.color))
 
     def setPosition(self, pos):
-        self.c.unhilightField(self)
+        self.unhilightField(self)
         if self.currPos: self.currPos.removeFigure(self)
         self.currPos = pos
         self.currPos.addFigure(self)
@@ -124,25 +193,11 @@ class Figure(QGraphicsEllipseItem, QObject):
         self.setPosition(start)
 
 class Communicate(QObject):
-    enter = pyqtSignal()
-    leave = pyqtSignal()
-    clicked = pyqtSignal()
-    moved = pyqtSignal()
-
-    def hilightField(self, fig):
-        pos = fig.getResultPosition()
-        if pos is not None:
-            scene = pos.scene()
-            fig.hilight = scene.addRect(pos.boundingRect())
-            color = fig.getColor()
-            fig.hilight.setPen(QPen(color, 4.0))
-
-    def unhilightField(self, fig):
-        if fig.hilight is not None:
-            pos = fig.getResultPosition()
-            scene = pos.scene()
-            scene.removeItem(fig.hilight)
-            fig.hilight = None
+    enter = pyqtSignal(Figure)
+    leave = pyqtSignal(Figure)
+    clicked = pyqtSignal(Figure)
+    moved = pyqtSignal(Figure)
+    diceRolled = pyqtSignal(int)
 
 class Field(QGraphicsRectItem, QObject):
     def __init__(self, x, y, w, h, parent=None):
