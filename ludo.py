@@ -88,6 +88,7 @@ class Ludo(QMainWindow):
 
     def add_figures(self):
         self.figures = []
+        self.players = [None, None, None, None]
         colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
         for index in range(4):
             figures = []
@@ -113,6 +114,13 @@ class Ludo(QMainWindow):
         self.new_game_action.setEnabled(True)
         self.statusLabel.setText("Ready")
         self.reset_action.setEnabled(False)
+
+        for index in range(4):
+            startFields = self.board.getStartField(index)
+            figures = self.figures[index]
+            for id, startField in enumerate(startFields):
+                figure = figures[id]
+                figure.setPosition(startField)
 
     def start(self, player_data):
         self.reset_action.setEnabled(True)

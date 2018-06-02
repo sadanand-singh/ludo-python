@@ -14,40 +14,21 @@ class Figure(QGraphicsEllipseItem, QObject):
         self.player = None
         self.setAcceptHoverEvents(True)
         self.setPen(QPen(Qt.black, 2.0))
-
-        self.enter = pyqtSignal(Figure)
-        self.leave = pyqtSignal(Figure)
-        self.clicked = pyqtSignal(Figure)
-        self.moved = pyqtSignal(Figure)
-        # self.enter.connect(self.hilightField)
-        # self.leave.connect(self.unhilightField)
+        self.c = Communicate()
+        self.c.enter.connect(self.c.hilightField)
+        self.c.leave.connect(self.c.unhilightField)
 
     def hoverEnterEvent(self, event):
         if not self.enabled: return
-        self.enter.emit(self)
+        self.c.enter.emit(self)
 
     def hoverLeaveEvent(self, event):
         if not self.enabled: return
-        self.leave.emit(self)
-
-    def hilightField(self, fig):
-        pos = fig.getResultPosition()
-        if pos:
-            scene = pos.scene()
-            self.hilight = scene.addRect(pos.boundingRect())
-            self.color = fig.getColor()
-            self.hilight.setPen(QPen(self.color, 4.0))
-
-    def unhilightField(self, fig):
-        if self.hilight:
-            pos = fig.getResultPosition()
-            scene = pos.scene()
-            scene.removeItem(hilight)
-            self.hilight = None
+        self.c.leave.emit(self)
 
     def mousePressEvent(self, mouse_event):
         if not self.enabled: return
-        self.clicked.emit(self)
+        self.c.clicked.emit(self)
 
     def setEnabled(self, enabled):
         self.enabled = enabled
@@ -68,7 +49,7 @@ class Figure(QGraphicsEllipseItem, QObject):
         self.setBrush(QBrush(self.color))
 
     def setPosition(self, pos):
-        self.unhilightField(self)
+        self.c.unhilightField(self)
         if self.currPos: self.currPos.removeFigure(self)
         self.currPos = pos
         self.currPos.addFigure(self)
@@ -141,6 +122,27 @@ class Figure(QGraphicsEllipseItem, QObject):
         index = self.player.getFigures().index(self)
         start = startField[index]
         self.setPosition(start)
+
+class Communicate(QObject):
+    enter = pyqtSignal()
+    leave = pyqtSignal()
+    clicked = pyqtSignal()
+    moved = pyqtSignal()
+
+    def hilightField(self, fig):
+        pos = fig.getResultPosition()
+        if pos is not None:
+            scene = pos.scene()
+            fig.hilight = scene.addRect(pos.boundingRect())
+            color = fig.getColor()
+            fig.hilight.setPen(QPen(color, 4.0))
+
+    def unhilightField(self, fig):
+        if fig.hilight is not None:
+            pos = fig.getResultPosition()
+            scene = pos.scene()
+            scene.removeItem(fig.hilight)
+            fig.hilight = None
 
 class Field(QGraphicsRectItem, QObject):
     def __init__(self, x, y, w, h, parent=None):
