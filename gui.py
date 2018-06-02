@@ -3,9 +3,148 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import resources
 
-class Field(QObject, QGraphicsRectItem):
-    def __init__(self, x, y, w, h, parent):
-        QGraphicsRectItem.__init__(self, x, y, w, h, parent)
+class Figure(QGraphicsEllipseItem, QObject):
+    def __init__(self, diameter, parent=None):
+        super().__init__(0.0, 0.0, diameter, diameter, parent)
+        self.diameter = diameter
+        self.enabled = False
+        self.hilight = None
+        self.currPos = None
+        self.color = None
+        self.player = None
+        self.setAcceptHoverEvents(True)
+        self.setPen(QPen(Qt.black, 2.0))
+
+        self.enter = pyqtSignal(Figure)
+        self.leave = pyqtSignal(Figure)
+        self.clicked = pyqtSignal(Figure)
+        self.moved = pyqtSignal(Figure)
+        # self.enter.connect(self.hilightField)
+        # self.leave.connect(self.unhilightField)
+
+    def hoverEnterEvent(self, event):
+        if not self.enabled: return
+        self.enter.emit(self)
+
+    def hoverLeaveEvent(self, event):
+        if not self.enabled: return
+        self.leave.emit(self)
+
+    def hilightField(self, fig):
+        pos = fig.getResultPosition()
+        if pos:
+            scene = pos.scene()
+            self.hilight = scene.addRect(pos.boundingRect())
+            self.color = fig.getColor()
+            self.hilight.setPen(QPen(self.color, 4.0))
+
+    def unhilightField(self, fig):
+        if self.hilight:
+            pos = fig.getResultPosition()
+            scene = pos.scene()
+            scene.removeItem(hilight)
+            self.hilight = None
+
+    def mousePressEvent(self, mouse_event):
+        if not self.enabled: return
+        self.clicked.emit(self)
+
+    def setEnabled(self, enabled):
+        self.enabled = enabled
+
+    def isEnabled(self):
+        return self.enabled
+
+    def setPlayer(self, player):
+        self.player = player
+        self.color = player.getColor()
+        self.setBrush(QBrush(self.color))
+
+    def getColor(self):
+        return self.color
+
+    def setColor(self, color):
+        self.color = color
+        self.setBrush(QBrush(self.color))
+
+    def setPosition(self, pos):
+        self.unhilightField(self)
+        if self.currPos: self.currPos.removeFigure(self)
+        self.currPos = pos
+        self.currPos.addFigure(self)
+
+    def getPlayer(self):
+        return self.player
+
+    def getPosition(self):
+        return self.currPos
+
+    def getResultPosition(self):
+        return self.resultPos
+
+    def getDiameter(self):
+        return self.diameter
+
+    def setDiameter(self, diameter):
+        self.diameter = diameter
+        self.setRect(0, 0, diameter, diameter)
+
+    def enableIfPossible(self, dice):
+        enabled = False
+        if isinstance(currPos, EndField):
+            return enabled
+        if isinstance(currPos, StartField):
+            if dice == 6:
+                self.setEnabled(True)
+                enabled = True
+                resultPos = currPos.next(self.color)
+            return enabled
+
+        resultPos = self.findResultPosition(dice)
+        if resultPos:
+            if not resultPos.isSpecial():
+                figs = resultPos.getFigures()
+                if len(figs) != 0:
+                    existingColor = figs[0].getColor()
+                    if self.color != existingColor:
+                        self.setEnabled(True)
+                        enabled = True
+                else:
+                    self.setEnabled(True)
+                    enabled = True
+            else:
+                self.setEnabled(True)
+                enabled = True
+        return enabled
+
+    def findResultPosition(self, dice):
+        resultPos = None
+
+        resultPosTemp = self.currPos
+        while dice > 0:
+            dice -= 1
+            if resultPosTemp:
+                resultPosTemp = resultPosTemp.next(color)
+            else:
+                break
+
+        if dice == -1 and resultPosTemp:
+            resultPos = resultPosTemp
+
+        return resultPos
+
+    def getHilight(self):
+        return self.hilight
+
+    def moveToHome(self):
+        startField = self.player.getStartField()
+        index = self.player.getFigures().index(self)
+        start = startField[index]
+        self.setPosition(start)
+
+class Field(QGraphicsRectItem, QObject):
+    def __init__(self, x, y, w, h, parent=None):
+        super().__init__(x, y, w, h, parent)
         index = 0
         self.setPen(QPen(Qt.black, 2.0))
         self.is_special = False
@@ -84,12 +223,12 @@ class Field(QObject, QGraphicsRectItem):
         return self.is_special
 
 class StartField(Field):
-    def __init__(self, rect, parent):
+    def __init__(self, rect, parent=None):
         super().__init__(rect.x()+1.0, rect.y()+1.0, rect.width()-2.0, rect.height()-2.0, parent)
         self.setVisible(False)
 
 class SpecialField(Field):
-    def __init__(self, rect, parent):
+    def __init__(self, rect, parent=None):
         super().__init__(rect.x()+1.0, rect.y()+1.0, rect.width()-2.0, rect.height()-2.0, parent)
         self.colorCounts = [0, 0, 0, 0]
         self.figureColors = 0
@@ -160,7 +299,7 @@ class SpecialField(Field):
         return center+self.shifts[index]
 
 class SafeField(Field):
-    def __init__(self, x, y, w, h, parent):
+    def __init__(self, x, y, w, h, parent=None):
         super().__init__(x, y, w, h, parent)
         self.color = QColor()
 
@@ -169,7 +308,7 @@ class SafeField(Field):
         self.setBrush(QBrush(self.color))
 
 class LastField(Field):
-    def __init__(self, x, y, w, h, parent):
+    def __init__(self, x, y, w, h, parent=None):
         super().__init__(x, y, w, h, parent)
         self.color = QColor()
         self.nextSafe = None
@@ -188,7 +327,7 @@ class LastField(Field):
         return self.nextField
 
 class EndField(Field):
-    def __init__(self, x, y, w, h, parent):
+    def __init__(self, x, y, w, h, parent=None):
         super().__init__(x, y, w, h, parent)
         self.setVisible(False)
         self.is_special = True
@@ -210,6 +349,7 @@ class EndField(Field):
             topLeft = center - QPointF(figureRadius, figureRadius)
             fig.setPos(topLeft)
             scene.addItem(fig)
+
         if fig_count > 1:
             self.text = QGraphicsTextItem()
             fig = figures.at(0)
@@ -223,27 +363,61 @@ class EndField(Field):
             scene.addItem(text)
 
 class HomeField(QObject):
-    def __init__(self, x, y, r, c, scene, parent):
+    def __init__(self, x, y, rotation, color, scene, parent):
         super().__init__(parent)
+        self.startX = x
+        self.startY = y
+        self.color = color
+        self.circles = []
+
+        self.rect = scene.addRect(QRectF(self.startX, self.startY, 240, 240))
+        self.rect.setPen(QPen(Qt.black, 2.0))
+        self.rect.setBrush(QBrush(self.color))
+
+        self.hiliteRect = scene.addRect(QRectF(self.startX+10, self.startY+10, 220, 220))
+        self.hiliteRect.setPen(QPen(Qt.white, 4.0))
+        self.hiliteRect.setVisible(False)
+
+        c1 = scene.addEllipse(self.startX+40, self.startY+40, 60, 60)
+        c1.setPen(QPen(Qt.black, 2.0))
+        c1.setBrush(QBrush(Qt.white))
+        self.circles.append(c1)
+
+        c2 = scene.addEllipse(self.startX+140, self.startY+40, 60, 60)
+        c2.setPen(QPen(Qt.black, 2.0))
+        c2.setBrush(QBrush(Qt.white))
+        self.circles.append(c2)
+
+        c3 = scene.addEllipse(self.startX+40, self.startY+140, 60, 60)
+        c3.setPen(QPen(Qt.black, 2.0))
+        c3.setBrush(QBrush(Qt.white))
+        self.circles.append(c3)
+
+        c4 = scene.addEllipse(self.startX+140, self.startY+140, 60, 60)
+        c4.setPen(QPen(Qt.black, 2.0))
+        c4.setBrush(QBrush(Qt.white))
+        self.circles.append(c4)
 
 
+        T = QPolygonF()
+        T.append(QPointF(240, 240))
+        T.append(QPointF(240, 360))
+        T.append(QPointF(300, 300))
+        T.append(QPointF(240, 240))
+        self.triangle = scene.addPolygon(T)
+        self.triangle.setPen(QPen(Qt.black, 2.0))
+        self.triangle.setBrush(QBrush(color))
+        self.triangle.setTransformOriginPoint(QPointF(300, 300))
+        self.triangle.setRotation(rotation)
 
+    def getHomeField(self):
+        return self.circles
 
+    def getEndZone(self):
+        return self.triangle
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def getHiliteRect(self):
+        return self.hiliteRect
 
 
 class OnDemandSpacer(QWidget):

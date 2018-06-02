@@ -5,7 +5,7 @@ from gui import Field, StartField, EndField, LastField, SafeField, SpecialField,
 import resources
 
 class Board(QWidget):
-    def __init__(self, color):
+    def __init__(self):
         super().__init__()
 
         self.view = QGraphicsView()
@@ -66,7 +66,7 @@ class Board(QWidget):
         index += 1
         box.setColor(QColor(218, 165, 32))
         self.scene.addItem(box)
-        self.field.append(box)
+        self.fields.append(box)
 
         for x in range(560, 359, -40):
             box = Field(x, 320, 40, 40)
@@ -93,8 +93,8 @@ class Board(QWidget):
             box = Field(240, y, 40, 40)
             box.setIndex(index)
             index += 1
-            scene.addItem(box)
-            field.append(box)
+            self.scene.addItem(box)
+            self.fields.append(box)
 
         for x in range(200, -1, -40):
             box = Field(x, 320, 40, 40)
@@ -110,7 +110,7 @@ class Board(QWidget):
         self.scene.addItem(box)
         self.fields.append(box)
 
-        for x in range(40, 241, 40):
+        for x in range(40, 240, 40):
             box = SafeField(x, 280, 40, 40)
             box.setIndex(index)
             index += 1
@@ -118,7 +118,7 @@ class Board(QWidget):
             box.setColor(QColor(205, 92, 92))
             self.fields.append(box)
 
-        for y in range(40, 241, 40):
+        for y in range(40, 240, 40):
             box = SafeField(280, y, 40, 40)
             box.setIndex(index)
             index += 1
@@ -145,10 +145,10 @@ class Board(QWidget):
         self.diceBox = self.scene.addRect(270, 270, 60, 60)
         self.diceBox.setVisible(False)
 
-        self.drawSpecial(1)
-        self.drawSpecial(14)
-        self.drawSpecial(27)
-        self.drawSpecial(40)
+        self.drawSpecial(1, QColor(205, 92, 92))
+        self.drawSpecial(14, QColor(85, 107, 47))
+        self.drawSpecial(27, QColor(218, 165, 32))
+        self.drawSpecial(40, QColor(0, 191, 255))
 
         self.drawSpecial(9)
         self.drawSpecial(22)
@@ -227,7 +227,7 @@ class Board(QWidget):
             box = self.fields[index]
             box.setSafeField(self.fields[safe_index])
 
-    def drawSpecial(self, index, pen):
+    def drawSpecial(self, index, pen=Qt.black):
         brect = self.fields[index].boundingRect()
         self.fields[index] = None
 
@@ -235,10 +235,12 @@ class Board(QWidget):
         self.scene.addItem(box)
         self.fields[index] = box
 
-        line = self.scene.addLine(QLineF(brect.topLeft(), brect.bottomRight()))
-        line.setPen(QPen(pen, 2.0))
-        line = self.scene.addLine(QLineF(brect.bottomLeft(), brect.topRight()))
-        line.setPen(QPen(pen, 2.0))
+        shift = QPointF(3.5, 3.5)
+        line = self.scene.addLine(QLineF(brect.topLeft()+shift, brect.bottomRight()-shift))
+        line.setPen(QPen(pen, 4.0))
+        shift = QPointF(3.5, -3.5)
+        line = self.scene.addLine(QLineF(brect.bottomLeft()+shift, brect.topRight()-shift))
+        line.setPen(QPen(pen, 4.0))
 
     def getHome(self, index):
         if index < 4:

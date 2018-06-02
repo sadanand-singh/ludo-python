@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python3
 # -*- coding: utf-8 -*-
 
 """
@@ -16,7 +16,7 @@ Last edited: August 2017
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from gui import NewGameDialog
+from gui import NewGameDialog, Figure
 from board import Board
 import resources
 
@@ -24,11 +24,6 @@ class Ludo(QMainWindow):
 
     def __init__(self):
         super().__init__()
-
-        self.initUI()
-
-
-    def initUI(self):
 
         icon = QIcon(":/images/game")
         self.setWindowIcon(icon)
@@ -86,8 +81,27 @@ class Ludo(QMainWindow):
         self.statusLabel = QLabel("Ready")
         self.statusBar().addPermanentWidget(self.statusLabel)
 
+        self.add_figures()
+
         self.setWindowTitle('Ludo')
         self.show()
+
+    def add_figures(self):
+        self.figures = []
+        colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
+        for index in range(4):
+            figures = []
+            startFields = self.board.getStartField(index)
+
+            for startField in startFields:
+                figure = Figure(24.0)
+                self.board.getScene().addItem(figure)
+                figure.setPosition(startField)
+                figure.setColor(self.colors[colors[index]])
+                figures.append(figure)
+
+            self.figures.append(figures)
+
 
     def start_game(self):
         dialog = NewGameDialog("Choose Players...")
