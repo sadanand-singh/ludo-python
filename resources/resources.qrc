@@ -2,6 +2,7 @@
 <RCC version="1.0">
   <qresource prefix="/images">
       <file alias="game">game.png</file>
+      <file alias="reset">reset.png</file>
       <file alias="clear">clear.png</file>
       <file alias="exit">exit.png</file>
       <file alias="icon">icon.png</file>
