@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import QPointF, QTime, QCoreApplication, QEventLoop
 from gui import NewGameDialog, Figure, DiceWidget
+from player import Player
 from board import Board
 import resources
 
@@ -95,7 +96,6 @@ class Ludo(QMainWindow):
 
         self.setWindowTitle('Ludo')
         self.show()
-        self.delay(1)
 
     def add_figures(self):
         self.figures = []
@@ -113,7 +113,6 @@ class Ludo(QMainWindow):
                 figures.append(figure)
 
             self.figures.append(figures)
-
 
     def start_game(self):
         dialog = NewGameDialog("Choose Players...")
@@ -149,9 +148,31 @@ class Ludo(QMainWindow):
         colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
 
         for index, (is_human, name) in enumerate(player_data):
-            color = self.colors[colors[index]]
+            color_name = colors[index]
+            color = self.colors[color_name]
             if not is_human: name = "Computer"
-            print(name)
+
+            player = Player(name, color, color_name, self) if is_human else Player(name, color, color_name, self)
+
+            player.continue_game.connect(self.setCurrentPlayer)
+            player.game_won.connect(self.finished)
+
+            startFields = self.board.getStartField(index)
+            figures = self.figures[index]
+            player.setFigures(figures)
+            self.dice.c.diceRolled.connect(player.setDice)
+            for id, startField in enumerate(startFields):
+                figure = figures[id]
+                figure.setPlayer(player)
+                figure.c.clicked.connect(player.move)
+            self.players[index] = player
+
+        self.currPlayer = self.players[0]
+        print(len(self.currPlayer.getFigures()))
+        self.showTurn()
+        self.currPlayer.setEnabled(True)
+        print(self.currPlayer.is_active)
+        self.dice.roll()
 
     def activatePlayerFigures(self, diceValue):
         figures = self.currPlayer.getFigures()
@@ -169,11 +190,10 @@ class Ludo(QMainWindow):
             indexPlayer = self.players.index(self.currPlayer)
             indexPlayer = indexPlayer+1 if indexPlayer != 3 else 0
             self.currPlayer = self.players[indexPlayer]
-            self.currPlayer.setEnabled(False)
+            self.currPlayer.setEnabled(True)
 
         self.showTurn()
         self.dice.resetDice()
-
         self.delay(1)
         self.dice.roll()
 

@@ -66,6 +66,7 @@ class Figure(QGraphicsEllipseItem):
         self.currPos = None
         self.color = None
         self.player = None
+        self.resultPos = None
         self.setAcceptHoverEvents(True)
         self.setPen(QPen(Qt.black, 2.0))
         self.c = Communicate()
@@ -141,19 +142,19 @@ class Figure(QGraphicsEllipseItem):
 
     def enableIfPossible(self, dice):
         enabled = False
-        if isinstance(currPos, EndField):
+        if isinstance(self.currPos, EndField):
             return enabled
-        if isinstance(currPos, StartField):
+        if isinstance(self.currPos, StartField):
             if dice == 6:
                 self.setEnabled(True)
                 enabled = True
-                resultPos = currPos.next(self.color)
+                self.resultPos = self.currPos.next(self.color)
             return enabled
 
-        resultPos = self.findResultPosition(dice)
-        if resultPos:
-            if not resultPos.isSpecial():
-                figs = resultPos.getFigures()
+        self.resultPos = self.findResultPosition(dice)
+        if self.resultPos:
+            if not self.resultPos.isSpecial():
+                figs = self.resultPos.getFigures()
                 if len(figs) != 0:
                     existingColor = figs[0].getColor()
                     if self.color != existingColor:
@@ -174,7 +175,7 @@ class Figure(QGraphicsEllipseItem):
         while dice > 0:
             dice -= 1
             if resultPosTemp:
-                resultPosTemp = resultPosTemp.next(color)
+                resultPosTemp = resultPosTemp.next(dice)
             else:
                 break
 
@@ -260,15 +261,15 @@ class Field(QGraphicsRectItem):
 
         if fig_count > 1:
             self.text = QGraphicsTextItem()
-            fig = figures.at(0)
+            fig = self.figures[0]
             figureRadius = 0.5 * fig.getDiameter()
             center = self.boundingRect().center()
             topLeft = center - QPointF(figureRadius, figureRadius)
             topLeft += QPointF(5, 0)
-            text.setPos(topLeft)
-            text.setFont(QFont("Times", 10, QFont.Bold))
-            text.setPlainText(str(figureCount))
-            scene.addItem(text)
+            self.text.setPos(topLeft)
+            self.text.setFont(QFont("Times", 10, QFont.Bold))
+            self.text.setPlainText(str(fig_count))
+            scene.addItem(self.text)
 
     def setIndex(self, index):
         self.index = index
@@ -420,7 +421,7 @@ class EndField(Field):
             scene.addItem(text)
 
 class HomeField(QObject):
-    def __init__(self, x, y, rotation, color, scene, parent):
+    def __init__(self, x, y, rotation, color, scene, parent=None):
         super().__init__(parent)
         self.startX = x
         self.startY = y
