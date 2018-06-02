@@ -34,7 +34,7 @@ class DiceWidget(QGraphicsPixmapItem):
 
     def mousePressEvent(self, mouse_event):
         if not self.enabled: return
-        QGraphicsPixmapItem.mousePressEvent(mouse_event)
+        QGraphicsPixmapItem.mousePressEvent(self, mouse_event)
 
     def throwDice(self):
         self.dice = random.randint(1, 6)
@@ -107,7 +107,7 @@ class Figure(QGraphicsEllipseItem):
 
     def setPlayer(self, player):
         self.player = player
-        self.color = player.getColor()
+        self.color, _ = player.getColor()
         self.setBrush(QBrush(self.color))
 
     def getColor(self):
@@ -199,7 +199,7 @@ class Communicate(QObject):
     moved = pyqtSignal(Figure)
     diceRolled = pyqtSignal(int)
 
-class Field(QGraphicsRectItem, QObject):
+class Field(QGraphicsRectItem):
     def __init__(self, x, y, w, h, parent=None):
         super().__init__(x, y, w, h, parent)
         index = 0
