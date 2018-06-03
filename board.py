@@ -229,9 +229,11 @@ class Board(QWidget):
 
     def drawSpecial(self, index, pen=Qt.black):
         brect = self.fields[index].boundingRect()
+        idx = self.fields[index].getIndex()
         self.fields[index] = None
 
         box = SpecialField(brect)
+        box.setIndex(idx)
         self.scene.addItem(box)
         self.fields[index] = box
 
