@@ -424,7 +424,7 @@ class EndField(Field):
             self.text.setPos(topLeft)
             self.text.setFont(QFont("Times", 10, QFont.Bold))
             self.text.setPlainText(str(fig_count))
-            scene.addItem(text)
+            scene.addItem(self.text)
 
 class HomeField(QObject):
     def __init__(self, x, y, rotation, color, scene, parent=None):

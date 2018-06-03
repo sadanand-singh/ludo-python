@@ -18,7 +18,7 @@ class Player(QObject):
 
     def hasWon(self):
         for fig in self.figures:
-            if not isinstance(fig, EndField):
+            if not isinstance(fig.getPosition(), EndField):
                 return False
         return True
 
