@@ -255,10 +255,9 @@ class Field(QGraphicsRectItem):
             fig = self.figures[0]
             figureRadius = 0.5 * fig.getDiameter()
             center = self.boundingRect().center()
-            topLeft = center - QPointF(figureRadius, figureRadius)
-            topLeft += QPointF(5, 0)
+            topLeft = center - QPointF(figureRadius*0.65, figureRadius*0.85)
             self.text.setPos(topLeft)
-            self.text.setFont(QFont("Times", 10, QFont.Bold))
+            self.text.setFont(QFont("Times", 15, QFont.Bold))
             self.text.setPlainText(str(fig_count))
             scene.addItem(self.text)
 
@@ -338,10 +337,10 @@ class SpecialField(Field):
                 text = QGraphicsTextItem()
                 center = self.boundingRect().center()
                 center = self.get_new_center(center, index)
-                topLeft = center - QPointF(8.0, 8.0)
-                topLeft += QPointF(2, -2)
+                figureRadius = 0.5 * fig.getDiameter()
+                topLeft = center - QPointF(figureRadius*0.90, figureRadius*1.10)
                 text.setPos(topLeft)
-                text.setFont(QFont("Times", 10, QFont.Bold))
+                text.setFont(QFont("Times", 12, QFont.Bold))
                 text.setPlainText(str(count))
                 scene.addItem(text)
                 self.texts[index] = text
@@ -409,10 +408,9 @@ class EndField(Field):
             fig = self.figures[0]
             figureRadius = 0.5 * fig.getDiameter()
             center = self.boundingRect().center()
-            topLeft = center - QPointF(figureRadius, figureRadius)
-            topLeft += QPointF(2, -2)
+            topLeft = center - QPointF(figureRadius*0.85, figureRadius)
             self.text.setPos(topLeft)
-            self.text.setFont(QFont("Times", 10, QFont.Bold))
+            self.text.setFont(QFont("Times", 13, QFont.Bold))
             self.text.setPlainText(str(fig_count))
             scene.addItem(self.text)
 
