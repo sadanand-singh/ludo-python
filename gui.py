@@ -64,6 +64,7 @@ class Figure(QGraphicsEllipseItem):
         self.enabled = False
         self.hilight = None
         self.currPos = None
+        self.startPos = None
         self.color = None
         self.player = None
         self.resultPos = None
@@ -124,6 +125,9 @@ class Figure(QGraphicsEllipseItem):
         self.currPos = pos
         self.currPos.addFigure(self)
 
+    def setStartPosition(self, pos):
+        self.startPos = pos
+
     def getPlayer(self):
         return self.player
 
@@ -151,7 +155,7 @@ class Figure(QGraphicsEllipseItem):
                 self.resultPos = self.currPos.next(self.color)
             return enabled
 
-        self.resultPos = self.findResultPosition(dice)
+        self.findResultPosition(dice)
         if self.resultPos:
             if not self.resultPos.isSpecial():
                 figs = self.resultPos.getFigures()
@@ -169,29 +173,25 @@ class Figure(QGraphicsEllipseItem):
         return enabled
 
     def findResultPosition(self, dice):
-        resultPos = None
+        self.resultPos = None
 
         resultPosTemp = self.currPos
         while dice > 0:
             dice -= 1
             if resultPosTemp:
-                resultPosTemp = resultPosTemp.next(dice)
+                resultPosTemp = resultPosTemp.next(self.color)
             else:
                 break
 
-        if dice == -1 and resultPosTemp:
-            resultPos = resultPosTemp
+        if dice == 0 and resultPosTemp:
+            self.resultPos = resultPosTemp
 
-        return resultPos
 
     def getHilight(self):
         return self.hilight
 
     def moveToHome(self):
-        startField = self.player.getStartField()
-        index = self.player.getFigures().index(self)
-        start = startField[index]
-        self.setPosition(start)
+        self.setPosition(self.startPos)
 
 class Communicate(QObject):
     enter = pyqtSignal(Figure)
@@ -203,7 +203,8 @@ class Communicate(QObject):
 class Field(QGraphicsRectItem):
     def __init__(self, x, y, w, h, parent=None):
         super().__init__(x, y, w, h, parent)
-        index = 0
+        self.index = -1
+        self.name = "Normal"
         self.setPen(QPen(Qt.black, 2.0))
         self.is_special = False
         self.nextField = None
@@ -246,7 +247,7 @@ class Field(QGraphicsRectItem):
         fig_count = 0
 
         if self.text:
-            scene.removeItem(text)
+            scene.removeItem(self.text)
             self.text = None
 
         for fig in self.figures:
@@ -284,10 +285,12 @@ class StartField(Field):
     def __init__(self, rect, parent=None):
         super().__init__(rect.x()+1.0, rect.y()+1.0, rect.width()-2.0, rect.height()-2.0, parent)
         self.setVisible(False)
+        self.name = "Start"
 
 class SpecialField(Field):
     def __init__(self, rect, parent=None):
         super().__init__(rect.x()+1.0, rect.y()+1.0, rect.width()-2.0, rect.height()-2.0, parent)
+        self.name = "Start"
         self.colorCounts = [0, 0, 0, 0]
         self.figureColors = 0
         self.texts = [None, None, None, None]
@@ -349,7 +352,7 @@ class SpecialField(Field):
                 topLeft += QPointF(2, -2)
                 text.setPos(topLeft)
                 text.setFont(QFont("Times", 10, QFont.Bold))
-                text.setPlainText(str(figureCount))
+                text.setPlainText(str(count))
                 scene.addItem(text)
                 self.texts[index] = text
 
@@ -360,6 +363,7 @@ class SafeField(Field):
     def __init__(self, x, y, w, h, parent=None):
         super().__init__(x, y, w, h, parent)
         self.color = QColor()
+        self.name = "Safe"
 
     def setColor(self, color):
         self.color = color
@@ -370,6 +374,7 @@ class LastField(Field):
         super().__init__(x, y, w, h, parent)
         self.color = QColor()
         self.nextSafe = None
+        self.name = "Last"
 
     def setColor(self, color):
         self.color = color
@@ -389,14 +394,15 @@ class EndField(Field):
         super().__init__(x, y, w, h, parent)
         self.setVisible(False)
         self.is_special = True
+        self.name = "End"
 
     def drawFigures(self):
         scene = self.scene()
 
+        fig_count = 0
         if self.text:
-            scene.removeItem(text)
+            scene.removeItem(self.text)
             self.text = None
-            fig_count = 0
 
         for fig in self.figures:
             fig_count += 1
@@ -410,19 +416,20 @@ class EndField(Field):
 
         if fig_count > 1:
             self.text = QGraphicsTextItem()
-            fig = figures.at(0)
+            fig = self.figures[0]
             figureRadius = 0.5 * fig.getDiameter()
             center = self.boundingRect().center()
             topLeft = center - QPointF(figureRadius, figureRadius)
             topLeft += QPointF(2, -2)
             self.text.setPos(topLeft)
             self.text.setFont(QFont("Times", 10, QFont.Bold))
-            self.text.setPlainText(str(figureCount))
+            self.text.setPlainText(str(fig_count))
             scene.addItem(text)
 
 class HomeField(QObject):
     def __init__(self, x, y, rotation, color, scene, parent=None):
         super().__init__(parent)
+        self.name = "Home"
         self.startX = x
         self.startY = y
         self.color = color

@@ -109,6 +109,7 @@ class Ludo(QMainWindow):
                 figure = Figure(24.0)
                 self.board.getScene().addItem(figure)
                 figure.setPosition(startField)
+                figure.setStartPosition(startField)
                 figure.setColor(self.colors[colors[index]])
                 figures.append(figure)
 
@@ -168,10 +169,8 @@ class Ludo(QMainWindow):
             self.players[index] = player
 
         self.currPlayer = self.players[0]
-        print(len(self.currPlayer.getFigures()))
         self.showTurn()
         self.currPlayer.setEnabled(True)
-        print(self.currPlayer.is_active)
         self.dice.roll()
 
     def activatePlayerFigures(self, diceValue):
@@ -179,6 +178,7 @@ class Ludo(QMainWindow):
         is_any_enabled = False
         for figure in figures:
             enable = figure.enableIfPossible(diceValue)
+            # print(figure.enabled)
             is_any_enabled = is_any_enabled or enable
 
         if not is_any_enabled:
