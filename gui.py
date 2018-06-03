@@ -8,7 +8,6 @@ class DiceWidget(QGraphicsPixmapItem):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.enabled = False
-        random.seed(1234)
         self.c = Communicate()
         self.images = []
         self.images.append(QPixmap(":/images/dice"))
@@ -66,7 +65,6 @@ class Figure(QGraphicsEllipseItem):
         self.currPos = None
         self.startPos = None
         self.color = None
-        self.player = None
         self.resultPos = None
         self.setAcceptHoverEvents(True)
         self.setPen(QPen(Qt.black, 2.0))
