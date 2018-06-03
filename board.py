@@ -145,10 +145,10 @@ class Board(QWidget):
         self.diceBox = self.scene.addRect(270, 270, 60, 60)
         self.diceBox.setVisible(False)
 
-        self.drawSpecial(1, QColor(205, 92, 92))
-        self.drawSpecial(14, QColor(85, 107, 47))
-        self.drawSpecial(27, QColor(218, 165, 32))
-        self.drawSpecial(40, QColor(0, 191, 255))
+        self.drawSpecial(1, 'red')
+        self.drawSpecial(14, 'green')
+        self.drawSpecial(27, 'yellow')
+        self.drawSpecial(40, 'blue')
 
         self.drawSpecial(9)
         self.drawSpecial(22)
@@ -227,22 +227,22 @@ class Board(QWidget):
             box = self.fields[index]
             box.setSafeField(self.fields[safe_index])
 
-    def drawSpecial(self, index, pen=Qt.black):
+    def drawSpecial(self, index, color='black'):
         brect = self.fields[index].boundingRect()
         idx = self.fields[index].getIndex()
         self.fields[index] = None
 
         box = SpecialField(brect)
         box.setIndex(idx)
+        pmap = QPixmap(":/images/star")
+        if color != 'black':
+            pmap = QPixmap(":/images/star-{}".format(color))
+        pmap = pmap.scaled(QSize(30, 30), Qt.KeepAspectRatio)
+        pmap_item = QGraphicsPixmapItem(pmap)
+        pmap_item.setPos(brect.topLeft().x()+5.0, brect.topLeft().y()+5.0)
         self.scene.addItem(box)
+        self.scene.addItem(pmap_item)
         self.fields[index] = box
-
-        shift = QPointF(3.5, 3.5)
-        line = self.scene.addLine(QLineF(brect.topLeft()+shift, brect.bottomRight()-shift))
-        line.setPen(QPen(pen, 4.0))
-        shift = QPointF(3.5, -3.5)
-        line = self.scene.addLine(QLineF(brect.bottomLeft()+shift, brect.topRight()-shift))
-        line.setPen(QPen(pen, 4.0))
 
     def getHome(self, index):
         if index < 4:
