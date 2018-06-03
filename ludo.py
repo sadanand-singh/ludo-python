@@ -99,7 +99,7 @@ class Ludo(QMainWindow):
 
     def add_figures(self):
         self.figures = []
-        self.players = [None, None, None, None]
+        self.players = [None]*4
         colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
         for index in range(4):
             figures = []
@@ -125,7 +125,16 @@ class Ludo(QMainWindow):
         self.new_game_action.setEnabled(True)
         self.statusLabel.setText("Ready")
         self.reset_action.setEnabled(False)
+        self.dice.setPixmap(self.dice.images[0])
         self.dice.setEnabled(False)
+
+        for index, player in enumerate(self.players):
+            startFields = self.board.getStartField(index)
+            figures = self.figures[index]
+            self.dice.c.diceRolled.disconnect(player.setDice)
+            for id, startField in enumerate(startFields):
+                figure = figures[id]
+                figure.c.clicked.disconnect(player.move)
 
         l = len(self.players)
         for _ in range(l):
@@ -134,6 +143,7 @@ class Ludo(QMainWindow):
         for player in self.players:
             player = None
 
+        self.players = [None]*4
         for index in range(4):
             startFields = self.board.getStartField(index)
             figures = self.figures[index]
@@ -164,7 +174,6 @@ class Ludo(QMainWindow):
             self.dice.c.diceRolled.connect(player.setDice)
             for id, startField in enumerate(startFields):
                 figure = figures[id]
-                figure.setPlayer(player)
                 figure.c.clicked.connect(player.move)
             self.players[index] = player
 
@@ -178,7 +187,6 @@ class Ludo(QMainWindow):
         is_any_enabled = False
         for figure in figures:
             enable = figure.enableIfPossible(diceValue)
-            # print(figure.enabled)
             is_any_enabled = is_any_enabled or enable
 
         if not is_any_enabled:
@@ -187,7 +195,10 @@ class Ludo(QMainWindow):
     def setCurrentPlayer(self, isActive):
         if not isActive:
             self.currPlayer.setEnabled(False)
-            indexPlayer = self.players.index(self.currPlayer)
+            try:
+                indexPlayer = self.players.index(self.currPlayer)
+            except ValueError:
+                return
             indexPlayer = indexPlayer+1 if indexPlayer != 3 else 0
             self.currPlayer = self.players[indexPlayer]
             self.currPlayer.setEnabled(True)

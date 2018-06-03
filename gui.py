@@ -107,11 +107,6 @@ class Figure(QGraphicsEllipseItem):
     def isEnabled(self):
         return self.enabled
 
-    def setPlayer(self, player):
-        self.player = player
-        self.color, _ = player.getColor()
-        self.setBrush(QBrush(self.color))
-
     def getColor(self):
         return self.color
 
@@ -127,9 +122,6 @@ class Figure(QGraphicsEllipseItem):
 
     def setStartPosition(self, pos):
         self.startPos = pos
-
-    def getPlayer(self):
-        return self.player
 
     def getPosition(self):
         return self.currPos
