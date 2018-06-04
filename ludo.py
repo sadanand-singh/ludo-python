@@ -129,6 +129,8 @@ class Ludo(QMainWindow):
         self.dice.setEnabled(False)
 
         for index, player in enumerate(self.players):
+            rectBox = self.board.getHome(index)
+            rectBox.getHiliteRect().setVisible(False)
             startFields = self.board.getStartField(index)
             figures = self.figures[index]
             self.dice.c.diceRolled.disconnect(player.setDice)
