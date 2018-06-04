@@ -133,6 +133,7 @@ class Ludo(QMainWindow):
             player.roll_dice.disconnect(self.roll_dice)
             player.enable_player_figures.disconnect(self.activatePlayerFigures)
             player.three_sixes_message.disconnect(self.threeSixesMessage)
+            player.update_dice_widget.disconnect(self.drawDiceWidget)
 
             rect_box = self.board.getHome(index)
             rect_box.getHilightedRect().setVisible(False)
@@ -176,6 +177,7 @@ class Ludo(QMainWindow):
             player.roll_dice.connect(self.roll_dice)
             player.enable_player_figures.connect(self.activatePlayerFigures)
             player.three_sixes_message.connect(self.threeSixesMessage)
+            player.update_dice_widget.connect(self.drawDiceWidget)
 
             start_fields = self.board.getStartField(index)
             figures = self.figures[index]
@@ -191,7 +193,50 @@ class Ludo(QMainWindow):
         self.current_player.setEnabled(True)
         self.dice.roll()
 
-    def activatePlayerFigures(self, diceValue):
+    def drawDiceWidget(self, dice_list):
+        self.removeCurrentDiceWidget()
+        color = self.current_player.getColor()
+        self.right_spacer = QWidget()
+        self.right_spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(self.right_spacer)
+        for dice in dice_list:
+            widget = QPushButton(str(dice))
+            pal = widget.palette()
+            pal.setColor(QPalette.Button, color)
+            widget.setAutoFillBackground(true)
+            widget.setPalette(pal)
+            widget.update()
+            self.toolbar.addWidget(widget)
+            for player in self.players:
+                widget.clicked.connect(player.setCurrentDice)
+            widget.clicked.connect(self.activatePlayerFigures)
+            widget.clicked.connect(self.uncheckOtherDiceWidgets)
+
+    def removeCurrentDiceWidget(self):
+        del self.right_spacer
+        self.right_spacer = None
+        for widget in self.dice_widgets:
+            for player in self.players:
+                widget.clicked.disconnect(player.setCurrentDice)
+            widget.clicked.disconnect(self.activatePlayerFigures)
+            widget.clicked.disconnect(self.uncheckOtherDiceWidgets)
+
+        l = len(self.dice_widgets)
+        for _ in range(l):
+            del self.dice_widgets[0]
+
+        for widget in self.dice_widgets:
+            widget = None
+        self.dice_widgets = []
+
+    def uncheckOtherDiceWidgets(self, data):
+        diceValue, widget = data
+        other_widgets = [w for w in self.dice_widgets if w != widget]
+        for widget in other_widgets:
+            widget.uncheck()
+
+    def activatePlayerFigures(self, data):
+        diceValue, _ = data
         figures = self.current_player.getFigures()
         is_any_enabled = False
         for figure in figures:

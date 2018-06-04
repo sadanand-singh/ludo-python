@@ -5,7 +5,7 @@ from gui import *
 
 class Player(QObject):
     update_dice_widget = pyqtSignal(list)
-    enable_player_figures = pyqtSignal(int)
+    enable_player_figures = pyqtSignal(list)
     continue_game = pyqtSignal(bool)
     roll_dice = pyqtSignal()
     game_won = pyqtSignal()
@@ -44,7 +44,8 @@ class Player(QObject):
     def getName(self):
         return self.name
 
-    def setCurrentDice(self):
+    def setCurrentDice(self, data):
+        dice, _ = data
         if not self.is_active: return
         if dice not in self.dice:
             raise ValueError("Error! current dice value is not list!")
@@ -55,13 +56,13 @@ class Player(QObject):
 
         self.dice.append(dice)
         if dice == 6:
-            if len(self.dice) > 2 and all(self.dice[-3:] == 6):
+            if len(self.dice) > 2 and all([x == 6 for x  in self.dice[-3:]]):
                 self.dice = self.dice[:-3]
                 self.three_sixes_message.emit()
             self.update_dice_widget.emit(self.dice)
             self.roll_dice.emit()
             return
-        self.enable_player_figures.emit(dice)
+        self.enable_player_figures.emit([dice, None])
 
     def setEnabled(self, enable):
         self.is_active = enable
