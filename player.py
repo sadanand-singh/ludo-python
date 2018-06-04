@@ -15,6 +15,7 @@ class Player(QObject):
         self.is_active = False
         self.bonus_moves = 0
         self.figures = []
+        self.dice = []
 
     def hasWon(self):
         for fig in self.figures:
@@ -40,7 +41,7 @@ class Player(QObject):
         return self.name
 
     def setDice(self, dice):
-        self.dice = dice
+        self.dice.append(dice)
 
     def setEnabled(self, enable):
         self.is_active = enable
@@ -77,8 +78,7 @@ class Player(QObject):
         if self.hasWon():
             self.game_won.emit()
             return
-
-        if self.dice == 6: self.bonus_moves += 1
+        if self.dice[-1] == 6: self.bonus_moves += 1
         self.is_active = self.bonus_moves > 0
         if self.is_active: self.bonus_moves -= 1
         self.continue_game.emit(self.is_active)
