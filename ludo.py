@@ -80,19 +80,19 @@ class Ludo(QMainWindow):
         about_qt_action = help_menu.addAction("About &Qt", QApplication.aboutQt)
         about_qt_action.setStatusTip("Show Qt library's About Menu")
 
-        self.statusLabel = QLabel("Ready")
-        self.statusBar().addPermanentWidget(self.statusLabel)
+        self.status_label = QLabel("Ready")
+        self.statusBar().addPermanentWidget(self.status_label)
 
         self.add_figures()
 
         self.dice = DiceWidget()
-        dicePos = self.board.getDiceBox().boundingRect().topLeft()
-        dicePos -= QPointF(10, 10)
-        self.dice.setPos(dicePos)
+        dice_pos = self.board.getDiceBox().boundingRect().topLeft()
+        dice_pos -= QPointF(10, 10)
+        self.dice.setPos(dice_pos)
         self.board.getScene().addItem(self.dice)
 
-        self.dice.c.diceRolled.connect(self.updateStatusMessage)
-        self.dice.c.diceRolled.connect(self.activatePlayerFigures)
+        self.dice.c.dice_rolled.connect(self.updateStatusMessage)
+        self.dice.c.dice_rolled.connect(self.activatePlayerFigures)
 
         self.setWindowTitle('Ludo')
         self.show()
@@ -103,13 +103,13 @@ class Ludo(QMainWindow):
         colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
         for index in range(4):
             figures = []
-            startFields = self.board.getStartField(index)
+            start_fields = self.board.getStartField(index)
 
-            for startField in startFields:
+            for start_field in start_fields:
                 figure = Figure(24.0)
                 self.board.getScene().addItem(figure)
-                figure.setPosition(startField)
-                figure.setStartPosition(startField)
+                figure.setPosition(start_field)
+                figure.setStartPosition(start_field)
                 figure.setColor(self.colors[colors[index]])
                 figures.append(figure)
 
@@ -123,18 +123,20 @@ class Ludo(QMainWindow):
 
     def reset(self):
         self.new_game_action.setEnabled(True)
-        self.statusLabel.setText("Ready")
+        self.status_label.setText("Ready")
         self.reset_action.setEnabled(False)
         self.dice.setPixmap(self.dice.images[0])
         self.dice.setEnabled(False)
 
         for index, player in enumerate(self.players):
-            rectBox = self.board.getHome(index)
-            rectBox.getHiliteRect().setVisible(False)
-            startFields = self.board.getStartField(index)
+            player.continue_game.disconnect(self.setCurrentPlayer)
+            player.game_won.disconnect(self.finished)
+            rect_box = self.board.getHome(index)
+            rect_box.getHilightedRect().setVisible(False)
+            start_fields = self.board.getStartField(index)
             figures = self.figures[index]
-            self.dice.c.diceRolled.disconnect(player.setDice)
-            for id, startField in enumerate(startFields):
+            self.dice.c.dice_rolled.disconnect(player.setDice)
+            for id, start_field in enumerate(start_fields):
                 figure = figures[id]
                 figure.c.clicked.disconnect(player.move)
 
@@ -147,16 +149,16 @@ class Ludo(QMainWindow):
 
         self.players = [None]*4
         for index in range(4):
-            startFields = self.board.getStartField(index)
+            start_fields = self.board.getStartField(index)
             figures = self.figures[index]
-            for id, startField in enumerate(startFields):
+            for id, start_field in enumerate(start_fields):
                 figure = figures[id]
-                figure.setPosition(startField)
+                figure.setPosition(start_field)
 
     def start(self, player_data):
         self.reset_action.setEnabled(True)
         self.new_game_action.setEnabled(False)
-        self.statusLabel.setText("Game Started...")
+        self.status_label.setText("Game Started...")
         self.dice.setEnabled(True)
         colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
 
@@ -166,26 +168,25 @@ class Ludo(QMainWindow):
             if not is_human: name = "Computer"
 
             player = Player(name, color, color_name, self) if is_human else Player(name, color, color_name, self)
-
             player.continue_game.connect(self.setCurrentPlayer)
             player.game_won.connect(self.finished)
 
-            startFields = self.board.getStartField(index)
+            start_fields = self.board.getStartField(index)
             figures = self.figures[index]
             player.setFigures(figures)
-            self.dice.c.diceRolled.connect(player.setDice)
-            for id, startField in enumerate(startFields):
+            self.dice.c.dice_rolled.connect(player.setDice)
+            for id, start_field in enumerate(start_fields):
                 figure = figures[id]
                 figure.c.clicked.connect(player.move)
             self.players[index] = player
 
-        self.currPlayer = self.players[0]
+        self.current_player = self.players[0]
         self.showTurn()
-        self.currPlayer.setEnabled(True)
+        self.current_player.setEnabled(True)
         self.dice.roll()
 
     def activatePlayerFigures(self, diceValue):
-        figures = self.currPlayer.getFigures()
+        figures = self.current_player.getFigures()
         is_any_enabled = False
         for figure in figures:
             enable = figure.enableIfPossible(diceValue)
@@ -194,16 +195,16 @@ class Ludo(QMainWindow):
         if not is_any_enabled:
             self.setCurrentPlayer(False)
 
-    def setCurrentPlayer(self, isActive):
-        if not isActive:
-            self.currPlayer.setEnabled(False)
+    def setCurrentPlayer(self, is_active):
+        if not is_active:
+            self.current_player.setEnabled(False)
             try:
-                indexPlayer = self.players.index(self.currPlayer)
+                player_id = self.players.index(self.current_player)
             except ValueError:
                 return
-            indexPlayer = indexPlayer+1 if indexPlayer != 3 else 0
-            self.currPlayer = self.players[indexPlayer]
-            self.currPlayer.setEnabled(True)
+            player_id = player_id+1 if player_id != 3 else 0
+            self.current_player = self.players[player_id]
+            self.current_player.setEnabled(True)
 
         self.showTurn()
         self.dice.resetDice()
@@ -217,32 +218,32 @@ class Ludo(QMainWindow):
 
     def showTurn(self):
         for idx in range(4):
-            rectBox = self.board.getHome(idx)
-            rectBox.getHiliteRect().setVisible(False)
+            rect_box = self.board.getHome(idx)
+            rect_box.getHilightedRect().setVisible(False)
 
-        _, color_name = self.currPlayer.getColor()
+        _, color_name = self.current_player.getColor()
         colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
         index = colors.index(color_name)
-        msg = "Current Player: {0} ({1})".format(self.currPlayer.getName(), color_name)
+        msg = "Current Player: {0} ({1})".format(self.current_player.getName(), color_name)
         self.statusBar().showMessage(msg)
 
-        rectBox = self.board.getHome(index)
-        rectBox.getHiliteRect().setVisible(True)
+        rect_box = self.board.getHome(index)
+        rect_box.getHilightedRect().setVisible(True)
 
     def updateStatusMessage(self, diceValue):
-        _, color_name = self.currPlayer.getColor()
+        _, color_name = self.current_player.getColor()
         colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
         index = colors.index(color_name)
-        msg = "{0} ({1}) You Got {2}!".format(self.currPlayer.getName(), color_name, diceValue)
-        self.statusLabel.setText(msg)
+        msg = "{0} ({1}) You Got {2}!".format(self.current_player.getName(), color_name, diceValue)
+        self.status_label.setText(msg)
 
     def finished(self):
-        _, color_name = self.currPlayer.getColor()
+        _, color_name = self.current_player.getColor()
         colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
         index = colors.index(color_name)
-        msg = "Player: {0} ({1}) WON!!!".format(self.currPlayer.getName(), color_name)
+        msg = "Player: {0} ({1}) WON!!!".format(self.current_player.getName(), color_name)
         self.statusBar().showMessage(msg)
-        self.statusLabel.setText("")
+        self.status_label.setText("")
 
     def how_to_play(self):
         QMessageBox.about(self, "How to Play LUDO",

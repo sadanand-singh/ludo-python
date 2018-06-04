@@ -19,15 +19,15 @@ class DiceWidget(QGraphicsPixmapItem):
         self.images.append(QPixmap(":/images/dice6"))
         self.setPixmap(self.images[0])
         self.dice = 0
-        self.graphicsRotation = QGraphicsRotation()
-        self.graphicsRotation.setAxis(Qt.YAxis)
-        self.graphicsRotation.setAngle(0)
-        self.graphicsRotation.setOrigin(QVector3D(QPointF(35, 35)))
-        self.setTransformations([self.graphicsRotation])
+        self.graphics_rotation = QGraphicsRotation()
+        self.graphics_rotation.setAxis(Qt.YAxis)
+        self.graphics_rotation.setAngle(0)
+        self.graphics_rotation.setOrigin(QVector3D(QPointF(35, 35)))
+        self.setTransformations([self.graphics_rotation])
 
-        self.animation = QPropertyAnimation(self.graphicsRotation, b"angle")
+        self.animation = QPropertyAnimation(self.graphics_rotation, b"angle")
         self.animation.setDuration(500)
-        self.animation.setStartValue(self.graphicsRotation.angle())
+        self.animation.setStartValue(self.graphics_rotation.angle())
         self.animation.setEndValue(360)
         self.animation.finished.connect(self.throwDice)
 
@@ -39,7 +39,7 @@ class DiceWidget(QGraphicsPixmapItem):
         self.dice = random.randint(1, 6)
         self.setPixmap(self.images[self.dice])
         self.enabled = False
-        self.c.diceRolled.emit(self.dice)
+        self.c.dice_rolled.emit(self.dice)
 
     def resetDice(self):
         self.setPixmap(self.images[0])
@@ -62,10 +62,10 @@ class Figure(QGraphicsEllipseItem):
         self.diameter = diameter
         self.enabled = False
         self.hilight = None
-        self.currPos = None
-        self.startPos = None
+        self.current_position = None
+        self.start_position = None
         self.color = None
-        self.resultPos = None
+        self.result_position = None
         self.setAcceptHoverEvents(True)
         self.setPen(QPen(Qt.black, 2.0))
         self.c = Communicate()
@@ -112,20 +112,20 @@ class Figure(QGraphicsEllipseItem):
         self.color = color
         self.setBrush(QBrush(self.color))
 
-    def setPosition(self, pos):
+    def setPosition(self, position):
         self.unhilightField(self)
-        if self.currPos: self.currPos.removeFigure(self)
-        self.currPos = pos
-        self.currPos.addFigure(self)
+        if self.current_position: self.current_position.removeFigure(self)
+        self.current_position = position
+        self.current_position.addFigure(self)
 
-    def setStartPosition(self, pos):
-        self.startPos = pos
+    def setStartPosition(self, position):
+        self.start_position = position
 
     def getPosition(self):
-        return self.currPos
+        return self.current_position
 
     def getResultPosition(self):
-        return self.resultPos
+        return self.result_position
 
     def getDiameter(self):
         return self.diameter
@@ -136,59 +136,57 @@ class Figure(QGraphicsEllipseItem):
 
     def enableIfPossible(self, dice):
         enabled = False
-        if isinstance(self.currPos, EndField):
+        if isinstance(self.current_position, EndField):
             return enabled
-        if isinstance(self.currPos, StartField):
+        if isinstance(self.current_position, StartField):
             if dice == 6:
                 self.setEnabled(True)
                 enabled = True
-                self.resultPos = self.currPos.next(self.color)
+                self.result_position = self.current_position.next(self.color)
             return enabled
 
         self.findResultPosition(dice)
-        if self.resultPos:
-            if not self.resultPos.isSpecial():
-                figs = self.resultPos.getFigures()
-                if len(figs) != 0:
-                    existingColor = figs[0].getColor()
-                    if self.color != existingColor:
+        if self.result_position:
+            if self.result_position.isSpecial():
+                self.setEnabled(True)
+                enabled = True
+            else:
+                figs = self.result_position.getFigures()
+                if len(figs) > 0:
+                    existing_color = figs[0].getColor()
+                    if self.color != existing_color:
                         self.setEnabled(True)
                         enabled = True
                 else:
                     self.setEnabled(True)
                     enabled = True
-            else:
-                self.setEnabled(True)
-                enabled = True
         return enabled
 
     def findResultPosition(self, dice):
-        self.resultPos = None
+        self.result_position = None
 
-        resultPosTemp = self.currPos
+        result_position_temp = self.current_position
         while dice > 0:
             dice -= 1
-            if resultPosTemp:
-                resultPosTemp = resultPosTemp.next(self.color)
+            if result_position_temp:
+                result_position_temp = result_position_temp.next(self.color)
             else:
                 break
-
-        if dice == 0 and resultPosTemp:
-            self.resultPos = resultPosTemp
-
+        if dice == 0 and result_position_temp:
+            self.result_position = result_position_temp
 
     def getHilight(self):
         return self.hilight
 
     def moveToHome(self):
-        self.setPosition(self.startPos)
+        self.setPosition(self.start_position)
 
 class Communicate(QObject):
     enter = pyqtSignal(Figure)
     leave = pyqtSignal(Figure)
     clicked = pyqtSignal(Figure)
     moved = pyqtSignal(Figure)
-    diceRolled = pyqtSignal(int)
+    dice_rolled = pyqtSignal(int)
 
 class Field(QGraphicsRectItem):
     def __init__(self, x, y, w, h, parent=None):
@@ -197,22 +195,22 @@ class Field(QGraphicsRectItem):
         self.name = "Normal"
         self.setPen(QPen(Qt.black, 2.0))
         self.is_special = False
-        self.nextField = None
-        self.prevField = None
+        self.next_field = None
+        self.prev_field = None
         self.figures = []
         self.text = None
 
     def setNextField(self, field):
-        self.nextField = field
+        self.next_field = field
 
     def setPreviousField(self, field):
-        self.prevField = field
+        self.prev_field = field
 
     def next(self, color):
-        return self.nextField
+        return self.next_field
 
     def previous(self):
-        return self.prevField
+        return self.prev_field
 
     def getFigures(self):
         return self.figures
@@ -245,18 +243,18 @@ class Field(QGraphicsRectItem):
             scene.removeItem(fig)
             center = self.boundingRect().center()
             fig.setDiameter(24.0)
-            figureRadius = 0.5 * fig.getDiameter()
-            topLeft = center - QPointF(figureRadius, figureRadius)
-            fig.setPos(topLeft)
+            fig_radius = 0.5 * fig.getDiameter()
+            top_left = center - QPointF(fig_radius, fig_radius)
+            fig.setPos(top_left)
             scene.addItem(fig)
 
         if fig_count > 1:
             self.text = QGraphicsTextItem()
             fig = self.figures[0]
-            figureRadius = 0.5 * fig.getDiameter()
+            fig_radius = 0.5 * fig.getDiameter()
             center = self.boundingRect().center()
-            topLeft = center - QPointF(figureRadius*0.65, figureRadius*0.85)
-            self.text.setPos(topLeft)
+            top_left = center - QPointF(fig_radius*0.65, fig_radius*0.85)
+            self.text.setPos(top_left)
             self.text.setFont(QFont("Times", 15, QFont.Bold))
             self.text.setPlainText(str(fig_count))
             scene.addItem(self.text)
@@ -280,8 +278,8 @@ class SpecialField(Field):
     def __init__(self, rect, parent=None):
         super().__init__(rect.x()+1.0, rect.y()+1.0, rect.width()-2.0, rect.height()-2.0, parent)
         self.name = "Start"
-        self.colorCounts = [0, 0, 0, 0]
-        self.figureColors = 0
+        self.color_counts = [0, 0, 0, 0]
+        self.num_fig_colors = 0
         self.texts = [None, None, None, None]
         self.colors =[QColor(205, 92, 92), QColor(85, 107, 47), QColor(218, 165, 32), QColor(0, 191, 255)]
         self.is_special = True
@@ -291,15 +289,15 @@ class SpecialField(Field):
     def addFigure(self, fig):
         color = fig.getColor()
         index = self.colors.index(color)
-        if self.colorCounts[index] == 0: self.figureColors += 1
-        self.colorCounts[index] += 1
+        if self.color_counts[index] == 0: self.num_fig_colors += 1
+        self.color_counts[index] += 1
         super().addFigure(fig)
 
     def removeFigure(self, fig):
         color = fig.getColor()
         index = self.colors.index(color)
-        if self.colorCounts[index] == 1: self.figureColors -= 1
-        self.colorCounts[index] -= 1
+        if self.color_counts[index] == 1: self.num_fig_colors -= 1
+        self.color_counts[index] -= 1
         super().removeFigure(fig)
 
     def drawFigures(self):
@@ -313,7 +311,7 @@ class SpecialField(Field):
                 scene.removeItem(text)
                 text = None
 
-        if self.figureColors == 1:
+        if self.num_fig_colors == 1:
             color = self.figures[0].getColor()
             index = self.colors.index(color)
             self.text = self.texts[index]
@@ -326,20 +324,20 @@ class SpecialField(Field):
             center = self.boundingRect().center()
             center = self.get_new_center(center, index)
             fig.setDiameter(16.0)
-            figureRadius = 0.5 * fig.getDiameter()
-            topLeft = center - QPointF(figureRadius, figureRadius)
-            fig.setPos(topLeft)
+            fig_radius = 0.5 * fig.getDiameter()
+            top_left = center - QPointF(fig_radius, fig_radius)
+            fig.setPos(top_left)
             scene.addItem(fig)
 
         for index in range(4):
-            count = self.colorCounts[index]
+            count = self.color_counts[index]
             if count > 1:
                 text = QGraphicsTextItem()
                 center = self.boundingRect().center()
                 center = self.get_new_center(center, index)
-                figureRadius = 0.5 * fig.getDiameter()
-                topLeft = center - QPointF(figureRadius*0.90, figureRadius*1.10)
-                text.setPos(topLeft)
+                fig_radius = 0.5 * fig.getDiameter()
+                top_left = center - QPointF(fig_radius*0.90, fig_radius*1.10)
+                text.setPos(top_left)
                 text.setFont(QFont("Times", 12, QFont.Bold))
                 text.setPlainText(str(count))
                 scene.addItem(text)
@@ -362,7 +360,7 @@ class LastField(Field):
     def __init__(self, x, y, w, h, parent=None):
         super().__init__(x, y, w, h, parent)
         self.color = QColor()
-        self.nextSafe = None
+        self.next_safe_field = None
         self.name = "Last"
 
     def setColor(self, color):
@@ -372,11 +370,11 @@ class LastField(Field):
         return self.color
 
     def setSafeField(self, field):
-        self.nextSafe = field
+        self.next_safe_field = field
 
     def next(self, color):
-        if color == self.color: return self.nextSafe
-        return self.nextField
+        if color == self.color: return self.next_safe_field
+        return self.next_field
 
 class EndField(Field):
     def __init__(self, x, y, w, h, parent=None):
@@ -398,18 +396,18 @@ class EndField(Field):
             scene.removeItem(fig)
             center = self.boundingRect().center()
             fig.setDiameter(18.0)
-            figureRadius = 0.5 * fig.getDiameter()
-            topLeft = center - QPointF(figureRadius, figureRadius)
-            fig.setPos(topLeft)
+            fig_radius = 0.5 * fig.getDiameter()
+            top_left = center - QPointF(fig_radius, fig_radius)
+            fig.setPos(top_left)
             scene.addItem(fig)
 
         if fig_count > 1:
             self.text = QGraphicsTextItem()
             fig = self.figures[0]
-            figureRadius = 0.5 * fig.getDiameter()
+            fig_radius = 0.5 * fig.getDiameter()
             center = self.boundingRect().center()
-            topLeft = center - QPointF(figureRadius*0.85, figureRadius)
-            self.text.setPos(topLeft)
+            top_left = center - QPointF(fig_radius*0.85, fig_radius)
+            self.text.setPos(top_left)
             self.text.setFont(QFont("Times", 13, QFont.Bold))
             self.text.setPlainText(str(fig_count))
             scene.addItem(self.text)
@@ -427,9 +425,9 @@ class HomeField(QObject):
         self.rect.setPen(QPen(Qt.black, 2.0))
         self.rect.setBrush(QBrush(self.color))
 
-        self.hiliteRect = scene.addRect(QRectF(self.startX+10, self.startY+10, 220, 220))
-        self.hiliteRect.setPen(QPen(Qt.white, 4.0))
-        self.hiliteRect.setVisible(False)
+        self.hilighted_rect = scene.addRect(QRectF(self.startX+10, self.startY+10, 220, 220))
+        self.hilighted_rect.setPen(QPen(Qt.white, 4.0))
+        self.hilighted_rect.setVisible(False)
 
         c1 = scene.addEllipse(self.startX+40, self.startY+40, 60, 60)
         c1.setPen(QPen(Qt.black, 2.0))
@@ -451,7 +449,6 @@ class HomeField(QObject):
         c4.setBrush(QBrush(Qt.white))
         self.circles.append(c4)
 
-
         T = QPolygonF()
         T.append(QPointF(240, 240))
         T.append(QPointF(240, 360))
@@ -469,19 +466,19 @@ class HomeField(QObject):
     def getEndZone(self):
         return self.triangle
 
-    def getHiliteRect(self):
-        return self.hiliteRect
+    def getHilightedRect(self):
+        return self.hilighted_rect
 
 
 class OnDemandSpacer(QWidget):
     def __init__(self):
         super().__init__()
 
-        hLayout = QHBoxLayout()
+        horizontal_layout = QHBoxLayout()
         self.spacer = QSpacerItem(150, 12, QSizePolicy.Fixed, QSizePolicy.Fixed)
 
-        hLayout.addSpacerItem(self.spacer)
-        self.setLayout(hLayout)
+        horizontal_layout.addSpacerItem(self.spacer)
+        self.setLayout(horizontal_layout)
 
 class PlayerIcon(QWidget):
     def __init__(self, color):
@@ -502,42 +499,42 @@ class PlayerOption(QWidget):
         super().__init__()
 
         self.icon = PlayerIcon(color)
-        self.computerOption = QRadioButton("Computer")
-        self.humanOption = QRadioButton("Human")
-        self.playerName = QLineEdit()
+        self.computer_option = QRadioButton("Computer")
+        self.human_option = QRadioButton("Human")
+        self.player_name = QLineEdit()
         self.spacer = OnDemandSpacer()
-        self.hLayout = QHBoxLayout()
+        self.h_layout = QHBoxLayout()
 
-        self.computerOption.setChecked(True)
-        self.humanOption.setChecked(False)
+        self.computer_option.setChecked(True)
+        self.human_option.setChecked(False)
 
-        self.playerName.setPlaceholderText("Enter player name...")
-        self.playerName.setClearButtonEnabled(True)
-        self.playerName.setVisible(False)
-        self.playerName.setFixedWidth(180)
+        self.player_name.setPlaceholderText("Enter player name...")
+        self.player_name.setClearButtonEnabled(True)
+        self.player_name.setVisible(False)
+        self.player_name.setFixedWidth(180)
 
         self.spacer.setVisible(True)
         self.spacer.setFixedWidth(180)
 
-        self.hLayout.addWidget(self.icon)
-        self.hLayout.addWidget(self.computerOption)
-        self.hLayout.addWidget(self.humanOption)
-        self.hLayout.addWidget(self.playerName)
-        self.hLayout.addWidget(self.spacer)
+        self.h_layout.addWidget(self.icon)
+        self.h_layout.addWidget(self.computer_option)
+        self.h_layout.addWidget(self.human_option)
+        self.h_layout.addWidget(self.player_name)
+        self.h_layout.addWidget(self.spacer)
 
-        self.humanOption.toggled.connect(self.playerName.setVisible)
-        self.humanOption.toggled.connect(self.spacer.setHidden)
+        self.human_option.toggled.connect(self.player_name.setVisible)
+        self.human_option.toggled.connect(self.spacer.setHidden)
 
-        self.setLayout(self.hLayout)
+        self.setLayout(self.h_layout)
 
     def getPlayerName(self):
-        return self.playerName
+        return self.player_name
 
     def getComputerOption(self):
-        return self.computerOption
+        return self.computer_option
 
     def getHumanOption(self):
-        return self.humanOption
+        return self.human_option
 
 
 class NewGameDialog(QDialog):
@@ -545,12 +542,12 @@ class NewGameDialog(QDialog):
     def __init__(self, title):
         super().__init__()
 
-        self.okButton = QPushButton("Start Demo")
-        self.okButton.setEnabled(True)
-        self.okButton.setDefault(True)
-        self.cancelButton = QPushButton("Cancel")
+        self.ok_button = QPushButton("Start Demo")
+        self.ok_button.setEnabled(True)
+        self.ok_button.setDefault(True)
+        self.cancel_button = QPushButton("Cancel")
         self.spacer = OnDemandSpacer()
-        self.hLayoutButton = QHBoxLayout()
+        self.h_layout_button = QHBoxLayout()
         self.buttons = QWidget()
 
         self.player_list = []
@@ -559,29 +556,29 @@ class NewGameDialog(QDialog):
         self.player_list.append(PlayerOption(QColor(218, 165, 32)))
         self.player_list.append(PlayerOption(QColor(0, 191, 255)))
 
-        self.vLayout = QVBoxLayout()
-        self.vLayout.addWidget(self.buttons)
-        self.vLayout.setSizeConstraint(QLayout.SetFixedSize)
+        self.v_layout = QVBoxLayout()
+        self.v_layout.addWidget(self.buttons)
+        self.v_layout.setSizeConstraint(QLayout.SetFixedSize)
         for player in self.player_list:
-            self.vLayout.addWidget(player)
+            self.v_layout.addWidget(player)
 
-        self.hLayoutButton.addWidget(self.spacer)
-        self.hLayoutButton.addWidget(self.okButton)
-        self.hLayoutButton.addWidget(self.cancelButton)
-        self.buttons.setLayout(self.hLayoutButton)
+        self.h_layout_button.addWidget(self.spacer)
+        self.h_layout_button.addWidget(self.ok_button)
+        self.h_layout_button.addWidget(self.cancel_button)
+        self.buttons.setLayout(self.h_layout_button)
 
         self.setWindowTitle(title)
-        self.setLayout(self.vLayout)
+        self.setLayout(self.v_layout)
         self.setModal(True)
 
-        self.cancelButton.clicked.connect(self.close)
-        self.okButton.clicked.connect(self.savePlayerData)
+        self.cancel_button.clicked.connect(self.close)
+        self.ok_button.clicked.connect(self.savePlayerData)
 
         for player in self.player_list:
             field = player.getPlayerName()
             field.textChanged.connect(self.enableOKButton)
-            computerOption = player.getComputerOption()
-            computerOption.toggled.connect(self.enableOKButton)
+            computer_option = player.getComputerOption()
+            computer_option.toggled.connect(self.enableOKButton)
 
     def enableOKButton(self):
         player_names = []
@@ -603,21 +600,18 @@ class NewGameDialog(QDialog):
             any_human = any_human or is_human
 
         player_names = set(player_names)
-        if valid_names != len(player_names):
-            ok = False
+        if valid_names != len(player_names): ok = False
 
-        buttonTitle = "Start Demo"
-        if any_human: buttonTitle = "Start Game"
-        self.okButton.setText(buttonTitle)
-        self.okButton.setEnabled(ok)
+        button_title = "Start Demo"
+        if any_human: button_title = "Start Game"
+        self.ok_button.setText(button_title)
+        self.ok_button.setEnabled(ok)
 
     def savePlayerData(self):
         player_data = []
         for player in self.player_list:
             is_human = player.getHumanOption().isChecked()
-            name = ""
-            if is_human: name = player.getPlayerName().text()
+            name = player.getPlayerName().text() if is_human else ""
             player_data.append((is_human, name))
-
         self.accept()
         self.trigger.emit(player_data)
