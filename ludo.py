@@ -92,7 +92,6 @@ class Ludo(QMainWindow):
         self.board.getScene().addItem(self.dice)
 
         self.dice.c.dice_rolled.connect(self.updateStatusMessage)
-        self.dice.c.dice_rolled.connect(self.activatePlayerFigures)
 
         self.setWindowTitle('Ludo')
         self.show()
@@ -131,6 +130,10 @@ class Ludo(QMainWindow):
         for index, player in enumerate(self.players):
             player.continue_game.disconnect(self.setCurrentPlayer)
             player.game_won.disconnect(self.finished)
+            player.roll_dice.disconnect(self.roll_dice)
+            player.enable_player_figures.disconnect(self.activatePlayerFigures)
+            player.three_sixes_message.disconnect(self.threeSixesMessage)
+
             rect_box = self.board.getHome(index)
             rect_box.getHilightedRect().setVisible(False)
             start_fields = self.board.getStartField(index)
@@ -170,6 +173,9 @@ class Ludo(QMainWindow):
             player = Player(name, color, color_name, self) if is_human else Player(name, color, color_name, self)
             player.continue_game.connect(self.setCurrentPlayer)
             player.game_won.connect(self.finished)
+            player.roll_dice.connect(self.roll_dice)
+            player.enable_player_figures.connect(self.activatePlayerFigures)
+            player.three_sixes_message.connect(self.threeSixesMessage)
 
             start_fields = self.board.getStartField(index)
             figures = self.figures[index]
@@ -205,7 +211,11 @@ class Ludo(QMainWindow):
             player_id = player_id+1 if player_id != 3 else 0
             self.current_player = self.players[player_id]
             self.current_player.setEnabled(True)
+            self.roll_dice()
+        self.showTurn()
+        return
 
+    def roll_dice(self):
         self.showTurn()
         self.dice.resetDice()
         self.delay(1.0)
@@ -236,6 +246,15 @@ class Ludo(QMainWindow):
         index = colors.index(color_name)
         msg = "{0} ({1}) You Got {2}!".format(self.current_player.getName(), color_name, diceValue)
         self.status_label.setText(msg)
+
+    def threeSixesMessage(self):
+        _, color_name = self.current_player.getColor()
+        colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
+        index = colors.index(color_name)
+        msg = "{0} ({1}) You Got 3 consecutive 6s! Sorry, you need to roll the dice agian."
+        msg = msg.format(self.current_player.getName(), color_name)
+        self.statusBar().setText(msg)
+        self.status_label.setText("")
 
     def finished(self):
         _, color_name = self.current_player.getColor()

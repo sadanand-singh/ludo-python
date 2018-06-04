@@ -4,8 +4,12 @@ from PyQt5.QtCore import *
 from gui import *
 
 class Player(QObject):
+    update_dice_widget = pyqtSignal(list)
+    enable_player_figures = pyqtSignal(int)
     continue_game = pyqtSignal(bool)
+    roll_dice = pyqtSignal()
     game_won = pyqtSignal()
+    three_sixes_message = pyqtSignal()
     def __init__(self, name, color, color_name, parent=None):
         super().__init__(parent)
 
@@ -13,7 +17,7 @@ class Player(QObject):
         self.color = color
         self.color_name = color_name
         self.is_active = False
-        self.bonus_moves = 0
+        self.current_dice = -1
         self.figures = []
         self.dice = []
 
@@ -40,8 +44,24 @@ class Player(QObject):
     def getName(self):
         return self.name
 
+    def setCurrentDice(self):
+        if not self.is_active: return
+        if dice not in self.dice:
+            raise ValueError("Error! current dice value is not list!")
+        self.current_dice = dice
+
     def setDice(self, dice):
+        if not self.is_active: return
+
         self.dice.append(dice)
+        if dice == 6:
+            if len(self.dice) > 2 and all(self.dice[-3:] == 6):
+                self.dice = self.dice[:-3]
+                self.three_sixes_message.emit()
+            self.update_dice_widget.emit(self.dice)
+            self.roll_dice.emit()
+            return
+        self.enable_player_figures.emit(dice)
 
     def setEnabled(self, enable):
         self.is_active = enable
@@ -55,22 +75,25 @@ class Player(QObject):
             self.continue_game.emit(False)
             return
 
-        newPosition = figure.getResultPosition()
+        new_position = figure.getResultPosition()
 
-        if not newPosition.isSpecial():
-            allFigures = newPosition.getFigures()
+        if not new_position: return
+
+        if not new_position.isSpecial():
+            allFigures = new_position.getFigures()
             for fig in allFigures:
                 if fig.getColor() != self.color:
                     fig.moveToHome()
-                    self.bonus_moves += 1
+                    self.roll_dice.emit()
                 else:
-                    newPosition = None
+                    new_position = None
                     break
 
-        if newPosition:
-            if isinstance(newPosition, EndField):
-                self.bonus_moves += 1
-            figure.setPosition(newPosition)
+        self.dice.remove(self.current_dice)
+        self.update_dice_widget.emit(self.dice)
+        if isinstance(new_position, EndField):
+            self.roll_dice.emit()
+        figure.setPosition(new_position)
 
         for fig in self.figures:
             fig.setEnabled(False)
@@ -78,8 +101,7 @@ class Player(QObject):
         if self.hasWon():
             self.game_won.emit()
             return
-        if self.dice[-1] == 6: self.bonus_moves += 1
-        self.is_active = self.bonus_moves > 0
-        if self.is_active: self.bonus_moves -= 1
+
+        self.is_active = len(self.dice) > 0
         self.continue_game.emit(self.is_active)
         return
