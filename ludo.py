@@ -208,10 +208,10 @@ class Ludo(QMainWindow):
 
         self.showTurn()
         self.dice.resetDice()
-        self.delay(1)
+        self.delay(1.0)
         self.dice.roll()
 
-    def delay(self, time_in_sec):
+    def delay(self, time_in_sec=1.0):
         dice_time = QTime.currentTime().addSecs(time_in_sec)
         while QTime.currentTime() < dice_time:
             QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
@@ -247,14 +247,24 @@ class Ludo(QMainWindow):
 
     def how_to_play(self):
         QMessageBox.about(self, "How to Play LUDO",
-                 "<b>How to Play Ludo</b> <br>"
-                 "There are 4 colored players, "
-                 "each having 4 pieces. <br> Red player starts first.<br>"
-                 "You need to get a SIX to come out of HOME area.<br>"
-                 "If another colored player falls on your place.<br>"
-                 "You end up being dead and go back to HOME.<br>"
-                 "First player to bring all pieces to central <br>"
-                 "box WINS the game.")
+                 """<b>How to Play Ludo</b><br>
+                 There are 4 colored players, each having 4 pieces.
+                 Red player starts first.
+                 You need to get a SIX (6) to come out of HOME.<br><br>
+                 <b>YOUR GOAL: </b>Each player's goal is to put all 4 pieces to central end-zone!
+                 Each player needs to go around the board to reach the final end-zone.
+                 Board has 3 kinds of positions: <b>normal, special and safe/end.</b><br><br>
+                 In the <b>Normal</b> position, If another colored player falls
+                 on your place. You end up being dead and go back to HOME.
+                 You can not place more than one of your pieces in one position.
+                 In the <b>Special</b> position, denoted by 'STAR'
+                 symbols, everyone is safe. You start from the special
+                 position nearest to you denoted by the corresponding
+                 colored star. Any player can put as many pieces as they
+                 wish. Finally, in <b>safe/end</b> positions, colored
+                 acordingly, no other colored piece/player can land.<br><br>
+                 The first player to bring all 4 pieces to the end-zone WINS!
+                 """)
 
     def about(self):
         QMessageBox.about(self, "About Ludo",
