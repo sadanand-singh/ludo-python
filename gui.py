@@ -28,7 +28,7 @@ class DiceWidget(QGraphicsPixmapItem):
         self.images.append(QPixmap(":/images/dice5"))
         self.images.append(QPixmap(":/images/dice6"))
         self.setPixmap(self.images[0])
-        self.dice = 0
+        self.dice = []
         self.graphics_rotation = QGraphicsRotation()
         self.graphics_rotation.setAxis(Qt.YAxis)
         self.graphics_rotation.setAngle(0)
@@ -52,20 +52,20 @@ class DiceWidget(QGraphicsPixmapItem):
         if self.dice[-1] == 6:
             if len(self.dice) > 2 and all([d==6 for d in self.dice[-3:]]):
                 self.dice = self.dice[:-3]
-            self.delay()
-            self.roll(False)
+            self.delay(1)
+            self.roll()
         else:
             self.enabled = False
-            self.delay()
+            self.delay(1)
             self.c.dice_rolled.emit(self.dice)
 
     def resetDice(self):
         self.setPixmap(self.images[0])
+        self.dice = []
         self.enabled = True
 
-    def roll(self, new=True):
+    def roll(self):
         if not self.enabled: return
-        if new: self.dice = []
         self.setPixmap(self.images[0])
         self.animation.start()
 
@@ -85,6 +85,7 @@ class Figure(QGraphicsEllipseItem):
         super().__init__(0.0, 0.0, diameter, diameter, parent)
         self.diameter = diameter
         self.enabled = False
+        self.dice_value = 0
         self.hilight = None
         self.current_position = None
         self.start_position = None
@@ -165,14 +166,16 @@ class Figure(QGraphicsEllipseItem):
         if isinstance(self.current_position, StartField):
             if dice == 6:
                 self.setEnabled(True)
+                self.dice_value = dice
                 enabled = True
                 self.result_position = self.current_position.next(self.color)
             return enabled
 
-        self.findResultPosition(dice)
+        self.result_position = self.findResultPosition(dice)
         if self.result_position:
             if self.result_position.isSpecial():
                 self.setEnabled(True)
+                self.dice_value = dice
                 enabled = True
             else:
                 figs = self.result_position.getFigures()
@@ -180,14 +183,40 @@ class Figure(QGraphicsEllipseItem):
                     existing_color = figs[0].getColor()
                     if self.color != existing_color:
                         self.setEnabled(True)
+                        self.dice_value = dice
                         enabled = True
                 else:
                     self.setEnabled(True)
+                    self.dice_value = dice
                     enabled = True
         return enabled
 
+    def countValidFigures(self, dice):
+        count = 0
+        if isinstance(self.current_position, EndField):
+            return count
+        if isinstance(self.current_position, StartField):
+            if dice == 6:
+                count += 1
+            return count
+
+        result_position = self.findResultPosition(dice)
+        if result_position:
+            if result_position.isSpecial():
+                count += 1
+            else:
+                figs = result_position.getFigures()
+                if len(figs) > 0:
+                    existing_color = figs[0].getColor()
+                    if self.color != existing_color:
+                        count += 1
+                else:
+                    print("reg field")
+                    count += 1
+        return count
+
     def findResultPosition(self, dice):
-        self.result_position = None
+        result_position = None
 
         result_position_temp = self.current_position
         while dice > 0:
@@ -197,7 +226,8 @@ class Figure(QGraphicsEllipseItem):
             else:
                 break
         if dice == 0 and result_position_temp:
-            self.result_position = result_position_temp
+            return result_position_temp
+        return result_position
 
     def getHilight(self):
         return self.hilight
