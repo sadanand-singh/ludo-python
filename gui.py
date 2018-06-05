@@ -4,6 +4,16 @@ from PyQt5.QtCore import *
 import resources
 import random
 
+class DiceButton(QPushButton):
+    pressed = pyqtSignal(int)
+    def __init__(self, dice, parent=None):
+        super().__init__(str(dice), parent)
+        self.dice = dice
+
+    def mousePressEvent(self, mouse_event):
+        self.pressed.emit(self.dice)
+        QPushButton.mousePressEvent(self, mouse_event)
+
 class DiceWidget(QGraphicsPixmapItem):
     def __init__(self, parent=None):
         super().__init__(parent)

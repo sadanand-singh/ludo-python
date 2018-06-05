@@ -55,11 +55,11 @@ class Player(QObject):
 
     def move(self, figure):
         if not self.is_active:
-            self.continue_game.emit(self.is_active)
+            self.continue_game.emit([self.is_active, 0])
             return
 
         if not self.hasFigure(figure):
-            self.continue_game.emit(False)
+            self.continue_game.emit([False, 0])
             return
 
         newPosition = figure.getResultPosition()
