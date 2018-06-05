@@ -41,8 +41,8 @@ class Ludo(QMainWindow):
         self.setFixedSize(635, 720)
 
         menu = self.menuBar().addMenu("&Game")
-        toolbar = self.addToolBar("Game")
-        toolbar.setMovable(False)
+        self.toolbar = self.addToolBar("Game")
+        self.toolbar.setMovable(False)
         icon = QIcon(":/images/icon")
         self.new_game_action = QAction(icon, "&New Game", self)
         self.new_game_action.setShortcuts(QKeySequence.New)
@@ -57,9 +57,9 @@ class Ludo(QMainWindow):
         self.reset_action.triggered.connect(self.reset)
 
         menu.addAction(self.new_game_action)
-        toolbar.addAction(self.new_game_action)
+        self.toolbar.addAction(self.new_game_action)
         menu.addAction(self.reset_action)
-        toolbar.addAction(self.reset_action)
+        self.toolbar.addAction(self.reset_action)
 
         menu.addSeparator()
         exit_icon = QIcon(":/images/exit")
@@ -92,7 +92,10 @@ class Ludo(QMainWindow):
         self.board.getScene().addItem(self.dice)
 
         self.dice.c.dice_rolled.connect(self.updateStatusMessage)
-        self.dice.c.dice_rolled.connect(self.activatePlayerFigures)
+        self.dice.c.dice_updated.connect(self.updateStatusMessage)
+
+        self.right_spacer = None
+        self.dice_widgets = []
 
         self.setWindowTitle('Ludo')
         self.show()
@@ -131,6 +134,7 @@ class Ludo(QMainWindow):
         for index, player in enumerate(self.players):
             player.continue_game.disconnect(self.setCurrentPlayer)
             player.game_won.disconnect(self.finished)
+            player.draw_dice.disconnect(self.drawDiceWidget)
             rect_box = self.board.getHome(index)
             rect_box.getHilightedRect().setVisible(False)
             start_fields = self.board.getStartField(index)
@@ -170,6 +174,7 @@ class Ludo(QMainWindow):
             player = Player(name, color, color_name, self) if is_human else Player(name, color, color_name, self)
             player.continue_game.connect(self.setCurrentPlayer)
             player.game_won.connect(self.finished)
+            player.draw_dice.connect(self.drawDiceWidget)
 
             start_fields = self.board.getStartField(index)
             figures = self.figures[index]
@@ -185,17 +190,63 @@ class Ludo(QMainWindow):
         self.current_player.setEnabled(True)
         self.dice.roll()
 
-    def activatePlayerFigures(self, diceValue):
+    def drawDiceWidget(self, dice_list):
+
+        self.removeCurrentDiceWidget()
+        color = self.current_player.getColor()
+        self.right_spacer = QWidget()
+        self.right_spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(self.right_spacer)
+        for dice in dice_list:
+            widget = QPushButton(str(dice))
+            self.toolbar.addWidget(widget)
+            widget.clicked.connect(self.current_player.setDice)
+            widget.clicked.connect(self.activatePlayerFigures)
+            # widget.clicked.connect(self.uncheckOtherDiceWidgets)
+            self.dice_widgets.append(widget)
+
+    def removeCurrentDiceWidget(self):
+        del self.right_spacer
+        self.right_spacer = None
+        for widget in self.dice_widgets:
+            for player in self.players:
+                widget.clicked.disconnect(player.setCurrentDice)
+            widget.clicked.disconnect(self.activatePlayerFigures)
+            # widget.clicked.disconnect(self.uncheckOtherDiceWidgets)
+
+        l = len(self.dice_widgets)
+        for _ in range(l):
+            del self.dice_widgets[0]
+
+        for widget in self.dice_widgets:
+            widget = None
+        self.dice_widgets = []
+
+    def uncheckOtherDiceWidgets(self, data):
+        dice_value, widget = data
+        other_widgets = [w for w in self.dice_widgets if w != widget]
+        for widget in other_widgets:
+            widget.uncheck()
+
+    def activatePlayerFigures(self, dice_value):
         figures = self.current_player.getFigures()
         is_any_enabled = False
         for figure in figures:
-            enable = figure.enableIfPossible(diceValue)
+            enable = figure.enableIfPossible(dice_value)
             is_any_enabled = is_any_enabled or enable
 
-        if not is_any_enabled:
+        if is_any_enabled:
+            self.current_player.removeDice(dice_value)
+        else:
             self.setCurrentPlayer(False)
 
-    def setCurrentPlayer(self, is_active):
+    def setCurrentPlayer(self, data):
+        is_active, bonus_moves = data
+        if bonus_moves > 0:
+            self.showTurn()
+            self.dice.resetDice()
+            self.dice.roll()
+            return
         if not is_active:
             self.current_player.setEnabled(False)
             try:
@@ -205,16 +256,6 @@ class Ludo(QMainWindow):
             player_id = player_id+1 if player_id != 3 else 0
             self.current_player = self.players[player_id]
             self.current_player.setEnabled(True)
-
-        self.showTurn()
-        self.dice.resetDice()
-        self.delay(1)
-        self.dice.roll()
-
-    def delay(self, time_in_sec):
-        dice_time = QTime.currentTime().addSecs(time_in_sec)
-        while QTime.currentTime() < dice_time:
-            QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
 
     def showTurn(self):
         for idx in range(4):

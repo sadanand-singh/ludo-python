@@ -4,7 +4,8 @@ from PyQt5.QtCore import *
 from gui import *
 
 class Player(QObject):
-    continue_game = pyqtSignal(bool)
+    continue_game = pyqtSignal(list)
+    draw_dice = pyqtSignal(list)
     game_won = pyqtSignal()
     def __init__(self, name, color, color_name, parent=None):
         super().__init__(parent)
@@ -14,6 +15,7 @@ class Player(QObject):
         self.color_name = color_name
         self.is_active = False
         self.bonus_moves = 0
+        self.dice = []
         self.figures = []
 
     def hasWon(self):
@@ -40,7 +42,13 @@ class Player(QObject):
         return self.name
 
     def setDice(self, dice):
-        self.dice = dice
+        if self.is_active:
+            self.dice += dice
+            self.draw_dice.emit(self.dice)
+
+    def removeDice(self, dice):
+        self.dice.remove(dice)
+        self.draw_dice.emit(self.dice)
 
     def setEnabled(self, enable):
         self.is_active = enable
@@ -55,6 +63,7 @@ class Player(QObject):
             return
 
         newPosition = figure.getResultPosition()
+        if not newPosition: return
 
         if not newPosition.isSpecial():
             allFigures = newPosition.getFigures()
@@ -66,10 +75,9 @@ class Player(QObject):
                     newPosition = None
                     break
 
-        if newPosition:
-            if isinstance(newPosition, EndField):
-                self.bonus_moves += 1
-            figure.setPosition(newPosition)
+        if isinstance(newPosition, EndField):
+            self.bonus_moves += 1
+        figure.setPosition(newPosition)
 
         for fig in self.figures:
             fig.setEnabled(False)
@@ -78,8 +86,7 @@ class Player(QObject):
             self.game_won.emit()
             return
 
-        if self.dice == 6: self.bonus_moves += 1
-        self.is_active = self.bonus_moves > 0
-        if self.is_active: self.bonus_moves -= 1
-        self.continue_game.emit(self.is_active)
+        self.is_active = len(self.dice) > 0
+        if self.bonus_moves > 0: self.bonus_moves -= 1
+        self.continue_game.emit([self.is_active, self.bonus_moves])
         return

@@ -36,17 +36,26 @@ class DiceWidget(QGraphicsPixmapItem):
         QGraphicsPixmapItem.mousePressEvent(self, mouse_event)
 
     def throwDice(self):
-        self.dice = random.randint(1, 6)
-        self.setPixmap(self.images[self.dice])
-        self.enabled = False
-        self.c.dice_rolled.emit(self.dice)
+        self.dice.append(random.randint(1, 6))
+        self.c.dice_updated.emit(self.dice)
+        self.setPixmap(self.images[self.dice[-1]])
+        if self.dice[-1] == 6:
+            if len(self.dice) > 2 and all([d==6 for d in self.dice[-3:]]):
+                self.dice = self.dice[:-3]
+            self.delay()
+            self.roll(False)
+        else:
+            self.enabled = False
+            self.delay()
+            self.c.dice_rolled.emit(self.dice)
 
     def resetDice(self):
         self.setPixmap(self.images[0])
         self.enabled = True
 
-    def roll(self):
+    def roll(self, new=True):
         if not self.enabled: return
+        if new: self.dice = []
         self.setPixmap(self.images[0])
         self.animation.start()
 
@@ -55,6 +64,11 @@ class DiceWidget(QGraphicsPixmapItem):
 
     def value(self):
         return self.dice
+
+    def delay(self, time_in_sec=1.0):
+        dice_time = QTime.currentTime().addSecs(time_in_sec)
+        while QTime.currentTime() < dice_time:
+            QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
 
 class Figure(QGraphicsEllipseItem):
     def __init__(self, diameter, parent=None):
@@ -186,7 +200,8 @@ class Communicate(QObject):
     leave = pyqtSignal(Figure)
     clicked = pyqtSignal(Figure)
     moved = pyqtSignal(Figure)
-    dice_rolled = pyqtSignal(int)
+    dice_rolled = pyqtSignal(list)
+    dice_updated = pyqtSignal(list)
 
 class Field(QGraphicsRectItem):
     def __init__(self, x, y, w, h, parent=None):
