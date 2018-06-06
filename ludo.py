@@ -247,6 +247,11 @@ class Ludo(QMainWindow):
         for pos, fig in zip(current_positions, figures):
             fig.current_position = pos
 
+        if not self.possible:
+            _, color_name = self.current_player.getColor()
+            msg = "{0} ({1}): Sorry! No valid moves possible!".format(self.current_player.getName(), color_name)
+            self.status_label.setText(msg)
+
     def activatePlayerFigures(self, dice_value):
         # first disable all fgures
         for figure in self.current_player.getFigures():
