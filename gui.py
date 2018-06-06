@@ -191,29 +191,28 @@ class Figure(QGraphicsEllipseItem):
                     enabled = True
         return enabled
 
-    def countValidFigures(self, dice):
-        count = 0
+    def isValidMove(self, dice):
+        valid = 0
         if isinstance(self.current_position, EndField):
-            return count
+            return valid
         if isinstance(self.current_position, StartField):
             if dice == 6:
-                count += 1
-            return count
+                valid = 1
+            return valid
 
         result_position = self.findResultPosition(dice)
         if result_position:
             if result_position.isSpecial():
-                count += 1
+                valid = 1
             else:
                 figs = result_position.getFigures()
                 if len(figs) > 0:
                     existing_color = figs[0].getColor()
                     if self.color != existing_color:
-                        count += 1
+                        valid = 1
                 else:
-                    print("reg field")
-                    count += 1
-        return count
+                    valid = 1
+        return valid
 
     def findResultPosition(self, dice):
         result_position = None

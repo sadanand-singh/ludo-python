@@ -248,7 +248,7 @@ class Ludo(QMainWindow):
             def getCount(dice):
                 count = 0
                 for fig in figures:
-                    count += fig.countValidFigures(dice)
+                    count += fig.isValidMove(dice)
                 return count
             invalid = [getCount(dice)<=0 for dice in all_values]
             if all(invalid):
