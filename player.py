@@ -41,6 +41,9 @@ class Player(QObject):
     def getName(self):
         return self.name
 
+    def getDice(self):
+        return self.dice
+
     def setDice(self, dice):
         if self.is_active:
             self.dice += dice

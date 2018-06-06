@@ -238,21 +238,46 @@ class Ludo(QMainWindow):
 
     def activatePlayerFigures(self, dice_value):
         figures = self.current_player.getFigures()
-        is_any_enabled = False
-        for figure in figures:
-            enable = figure.enableIfPossible(dice_value)
-            is_any_enabled = is_any_enabled or enable
+        current_positions = [fig.current_position for fig in figures ]
+        dices = self.current_player.getDice()
+        possible = self.anyMovePossible(figures, dices)
+        for pos, fig in zip(current_positions, figures):
+            fig.current_position = pos
 
-        if not is_any_enabled:
-            def isDiceInvalid(dice):
-                count = 0
-                for fig in figures:
-                    count += fig.isValidMove(dice)
-                return count<=0
-            invalids = [isDiceInvalid(d) for d in self.current_player.dice]
-            if all(invalids):
-                self.current_player.continue_game.emit([False, 0])
-                return
+        if not possible:
+            self.current_player.continue_game.emit([False, 0])
+            return
+
+        for figure in figures:
+            figure.enableIfPossible(dice_value)
+
+    def getValidFigures(self, figure_list, dice):
+        def moveFigure(fig, dice):
+            result_position_temp = fig.current_position
+            while dice > 0:
+                dice -= 1
+                result_position_temp = result_position_temp.next(fig.color)
+            fig.current_position = result_position_temp
+            return fig
+
+        figs = []
+        for fig in figure_list:
+            if fig.isValidMove(dice) > 0:
+                fig = moveFigure(fig, dice)
+                figs.append(fig)
+        return figs
+
+    def anyMovePossible(self, figures, dices):
+        any_moves_possible = False
+        for idx, dice in enumerate(dices):
+            valid_figs = self.getValidFigures(figures, dice)
+            if valid_figs:
+                rest_dices = dices[:idx] + dices[idx+1:]
+                if rest_dices:
+                    any_moves_possible = any_moves_possible or self.anyMovePossible(valid_figs, rest_dices)
+                else:
+                    any_moves_possible = True
+        return any_moves_possible
 
     def setCurrentPlayer(self, data):
         is_active, bonus_moves = data
