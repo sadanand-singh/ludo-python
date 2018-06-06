@@ -30,11 +30,11 @@ class Ludo(QMainWindow):
         icon = QIcon(":/images/game")
         self.setWindowIcon(icon)
 
+        self.color_names = ['RED', 'GREEN', 'YELLOW', 'BLUE']
         self.colors = {}
-        self.colors['RED'] = QColor(205, 92, 92)
-        self.colors['GREEN'] = QColor(85, 107, 47)
-        self.colors['YELLOW'] = QColor(218, 165, 32)
-        self.colors['BLUE'] = QColor(0, 191, 255)
+        color_codes = (QColor(205, 92, 92), QColor(85, 107, 47), QColor(218, 165, 32), QColor(0, 191, 255))
+        for index, color in enumerate(self.color_names):
+            self.colors[color] = color_codes[index]
 
         self.board = Board()
         self.setCentralWidget(self.board)
@@ -106,20 +106,18 @@ class Ludo(QMainWindow):
     def add_figures(self):
         self.figures = []
         self.players = [None]*4
-        colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
         for index in range(4):
-            figures = []
+            figs = []
             start_fields = self.board.getStartField(index)
-
+            color_name = self.color_names[index]
             for start_field in start_fields:
                 figure = Figure(24.0)
                 self.board.getScene().addItem(figure)
                 figure.setPosition(start_field)
                 figure.setStartPosition(start_field)
-                figure.setColor(self.colors[colors[index]])
-                figures.append(figure)
-
-            self.figures.append(figures)
+                figure.setColor(self.colors[color_name])
+                figs.append(figure)
+            self.figures.append(figs)
 
     def start_game(self):
         dialog = NewGameDialog("Choose Players...")
@@ -172,10 +170,9 @@ class Ludo(QMainWindow):
         self.new_game_action.setEnabled(False)
         self.status_label.setText("Game Started...")
         self.dice.setEnabled(True)
-        colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
 
         for index, (is_human, name) in enumerate(player_data):
-            color_name = colors[index]
+            color_name = self.color_names[index]
             color = self.colors[color_name]
             if not is_human: name = "Computer"
 
@@ -320,8 +317,7 @@ class Ludo(QMainWindow):
             rect_box.getHilightedRect().setVisible(False)
 
         _, color_name = self.current_player.getColor()
-        colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
-        index = colors.index(color_name)
+        index = self.color_names.index(color_name)
         msg = "Current Player: {0} ({1})".format(self.current_player.getName(), color_name)
         self.statusBar().showMessage(msg)
 
@@ -330,22 +326,16 @@ class Ludo(QMainWindow):
 
     def updateStatusMessage(self, diceValue):
         _, color_name = self.current_player.getColor()
-        colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
-        index = colors.index(color_name)
         msg = "{0} ({1}) You Got {2}!".format(self.current_player.getName(), color_name, diceValue)
         self.status_label.setText(msg)
 
     def threeSixesMessage(self):
         _, color_name = self.current_player.getColor()
-        colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
-        index = colors.index(color_name)
         msg = "{0} ({1}) You Got 3 consecutive sixes! Start fresh!".format(self.current_player.getName(), color_name)
         self.status_label.setText(msg)
 
     def finished(self):
         _, color_name = self.current_player.getColor()
-        colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
-        index = colors.index(color_name)
         msg = "Player: {0} ({1}) WON!!!".format(self.current_player.getName(), color_name)
         self.statusBar().showMessage(msg)
         self.status_label.setText("")
