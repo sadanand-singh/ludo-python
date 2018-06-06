@@ -46,22 +46,15 @@ class Player(QObject):
             self.dice += dice
             self.draw_dice.emit(self.dice)
 
-    def removeDice(self, dice):
-        if self.is_active and dice in self.dice:
-            self.dice.remove(dice)
-            self.draw_dice.emit(self.dice)
-
     def setEnabled(self, enable):
         self.is_active = enable
 
     def move(self, figure):
         if not self.is_active:
-            self.removeDice(figure.dice_value)
             self.continue_game.emit([self.is_active, 0])
             return
 
         if not self.hasFigure(figure):
-            self.removeDice(figure.dice_value)
             self.continue_game.emit([False, 0])
             return
 
@@ -83,7 +76,9 @@ class Player(QObject):
             self.bonus_moves += 1
         figure.setPosition(newPosition)
 
-        self.removeDice(figure.dice_value)
+        dice = figure.dice_value
+        if dice in self.dice:
+            self.dice.remove(dice)
 
         for fig in self.figures:
             fig.setEnabled(False)
@@ -97,7 +92,9 @@ class Player(QObject):
             self.bonus_moves -= 1
             self.is_active = True
             self.continue_game.emit([True, 1])
+            self.draw_dice.emit(self.dice)
             return
         else:
             self.continue_game.emit([self.is_active, 0])
+            self.draw_dice.emit(self.dice)
             return
