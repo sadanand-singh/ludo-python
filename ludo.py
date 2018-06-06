@@ -93,6 +93,7 @@ class Ludo(QMainWindow):
 
         self.dice.c.dice_rolled.connect(self.updateStatusMessage)
         self.dice.c.dice_updated.connect(self.updateStatusMessage)
+        self.dice.c.three_sixes_message.connect(self.threeSixesMessage)
 
         self.right_spacer = None
         self.dice_widgets = []
@@ -226,6 +227,10 @@ class Ludo(QMainWindow):
 
         for widget in self.dice_widgets:
             widget = None
+
+        for waction in self.dice_widget_actions:
+            waction = None
+
         self.dice_widgets = []
         self.dice_widget_actions = []
 
@@ -243,8 +248,8 @@ class Ludo(QMainWindow):
                 for fig in figures:
                     count += fig.countValidFigures(dice)
                 return count
-            counts = [getCount(dice)<=0 for dice in all_values]
-            if all(counts):
+            invalid = [getCount(dice)<=0 for dice in all_values]
+            if all(invalid):
                 self.current_player.continue_game.emit([False, 0])
                 return
 
@@ -289,6 +294,13 @@ class Ludo(QMainWindow):
         colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
         index = colors.index(color_name)
         msg = "{0} ({1}) You Got {2}!".format(self.current_player.getName(), color_name, diceValue)
+        self.status_label.setText(msg)
+
+    def threeSixesMessage(self):
+        _, color_name = self.current_player.getColor()
+        colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
+        index = colors.index(color_name)
+        msg = "{0} ({1}) You Got 3 consucative sixes! Start fresh!".format(self.current_player.getName(), color_name)
         self.status_label.setText(msg)
 
     def finished(self):

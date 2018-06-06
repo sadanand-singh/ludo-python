@@ -52,6 +52,7 @@ class DiceWidget(QGraphicsPixmapItem):
         if self.dice[-1] == 6:
             if len(self.dice) > 2 and all([d==6 for d in self.dice[-3:]]):
                 self.dice = self.dice[:-3]
+                self.c.three_sixes_message.emit()
             self.delay(1)
             self.roll()
         else:
@@ -239,6 +240,7 @@ class Communicate(QObject):
     leave = pyqtSignal(Figure)
     clicked = pyqtSignal(Figure)
     moved = pyqtSignal(Figure)
+    three_sixes_message = pyqtSignal()
     dice_rolled = pyqtSignal(list)
     dice_updated = pyqtSignal(list)
 
