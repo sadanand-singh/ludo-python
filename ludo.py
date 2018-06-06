@@ -244,14 +244,13 @@ class Ludo(QMainWindow):
             is_any_enabled = is_any_enabled or enable
 
         if not is_any_enabled:
-            all_values = self.current_player.dice
-            def getCount(dice):
+            def isDiceInvalid(dice):
                 count = 0
                 for fig in figures:
                     count += fig.isValidMove(dice)
-                return count
-            invalid = [getCount(dice)<=0 for dice in all_values]
-            if all(invalid):
+                return count<=0
+            invalids = [isDiceInvalid(d) for d in self.current_player.dice]
+            if all(invalids):
                 self.current_player.continue_game.emit([False, 0])
                 return
 
