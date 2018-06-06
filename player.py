@@ -78,6 +78,7 @@ class Player(QObject):
                     newPosition = None
                     break
 
+        if not newPosition: return
         if isinstance(newPosition, EndField):
             self.bonus_moves += 1
         figure.setPosition(newPosition)
@@ -92,7 +93,11 @@ class Player(QObject):
             return
 
         self.is_active = len(self.dice) > 0
-        if self.bonus_moves > 0: self.bonus_moves -= 1
-
-        self.continue_game.emit([self.is_active, self.bonus_moves])
-        return
+        if self.bonus_moves > 0:
+            self.bonus_moves -= 1
+            self.is_active = True
+            self.continue_game.emit([True, 1])
+            return
+        else:
+            self.continue_game.emit([self.is_active, 0])
+            return

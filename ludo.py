@@ -130,6 +130,7 @@ class Ludo(QMainWindow):
         self.status_label.setText("Ready")
         self.reset_action.setEnabled(False)
         self.dice.setPixmap(self.dice.images[0])
+        self.dice.resetDice()
         self.dice.setEnabled(False)
         self.removeCurrentDiceWidget()
 
@@ -190,6 +191,7 @@ class Ludo(QMainWindow):
 
         self.current_player = self.players[0]
         self.showTurn()
+        self.dice.resetDice()
         self.current_player.setEnabled(True)
         self.dice.roll()
 
@@ -198,7 +200,7 @@ class Ludo(QMainWindow):
         color = self.current_player.getColor()
         self.right_spacer = QWidget()
         self.right_spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.toolbar.addWidget(self.right_spacer)
+        self.dice_widget_actions.append(self.toolbar.addWidget(self.right_spacer))
         for dice in dice_list:
             widget = DiceButton(dice)
             self.dice_widget_actions.append(self.toolbar.addWidget(widget))
@@ -206,12 +208,13 @@ class Ludo(QMainWindow):
             self.dice_widgets.append(widget)
 
     def removeCurrentDiceWidget(self):
-        del self.right_spacer
-        self.right_spacer = None
         for widget in self.dice_widgets:
             widget.pressed.disconnect(self.activatePlayerFigures)
         for waction in self.dice_widget_actions:
             self.toolbar.removeAction(waction)
+
+        del self.right_spacer
+        self.right_spacer = None
 
         l = len(self.dice_widgets)
         for _ in range(l):
@@ -235,7 +238,6 @@ class Ludo(QMainWindow):
 
         if not is_any_enabled:
             all_values = self.current_player.dice
-            print(all_values)
             def getCount(dice):
                 count = 0
                 for fig in figures:
