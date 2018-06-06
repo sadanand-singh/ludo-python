@@ -7,6 +7,7 @@ class Player(QObject):
     continue_game = pyqtSignal(list)
     draw_dice = pyqtSignal(list)
     game_won = pyqtSignal()
+    update_possible_moves_flag = pyqtSignal()
     def __init__(self, name, color, color_name, parent=None):
         super().__init__(parent)
 
@@ -47,6 +48,7 @@ class Player(QObject):
     def setDice(self, dice):
         if self.is_active:
             self.dice += dice
+            self.update_possible_moves_flag.emit()
             self.draw_dice.emit(self.dice)
 
     def setEnabled(self, enable):
