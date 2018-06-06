@@ -198,12 +198,14 @@ class Ludo(QMainWindow):
 
     def drawDiceWidget(self, dice_list):
         self.removeCurrentDiceWidget()
-        color = self.current_player.getColor()
+        color, _ = self.current_player.getColor()
         self.right_spacer = QWidget()
         self.right_spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.dice_widget_actions.append(self.toolbar.addWidget(self.right_spacer))
         for dice in dice_list:
             widget = DiceButton(dice)
+            widget.setStyleSheet("background-color:{};".format(color.name()))
+            widget.setFixedWidth(38)
             self.dice_widget_actions.append(self.toolbar.addWidget(widget))
             widget.pressed.connect(self.activatePlayerFigures)
             self.dice_widgets.append(widget)
