@@ -300,7 +300,7 @@ class Ludo(QMainWindow):
         _, color_name = self.current_player.getColor()
         colors = ['RED', 'GREEN', 'YELLOW', 'BLUE']
         index = colors.index(color_name)
-        msg = "{0} ({1}) You Got 3 consucative sixes! Start fresh!".format(self.current_player.getName(), color_name)
+        msg = "{0} ({1}) You Got 3 consecutive sixes! Start fresh!".format(self.current_player.getName(), color_name)
         self.status_label.setText(msg)
 
     def finished(self):
@@ -328,7 +328,13 @@ class Ludo(QMainWindow):
                  position nearest to you denoted by the corresponding
                  colored star. Here, any player can put as many pieces as they
                  wish. Finally, in the <b>safe/end</b> position, colored
-                 acordingly, no other colored piece/player can land.<br><br>
+                 accordingly, no other colored piece/player can land.<br><br>
+                 You get bonus moves if you: <br>
+                 1. Get a SIX<br>
+                 2. Kill an opponent's piece<br>
+                 3. Put your piece in end-zone<br><br>
+                 NOTE: If you get three consecutive SIXES, you lose all three sixes.
+                 You will need to start fresh.<br><br>
                  The first player to bring all 4 pieces to the end-zone WINS!
                  """)
 
