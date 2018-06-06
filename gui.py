@@ -56,7 +56,6 @@ class DiceWidget(QGraphicsPixmapItem):
             self.roll()
         else:
             self.enabled = False
-            self.delay(1)
             self.c.dice_rolled.emit(self.dice)
 
     def resetDice(self):
