@@ -138,7 +138,6 @@ class Ludo(QMainWindow):
         for index, player in enumerate(self.players):
             player.continue_game.disconnect(self.setCurrentPlayer)
             player.game_won.disconnect(self.finished)
-            player.draw_dice.disconnect(self.drawDiceWidget)
             player.update_possible_moves_flag.disconnect(self.updatePossibleMovesFlag)
 
             rect_box = self.board.getHome(index)
@@ -179,7 +178,6 @@ class Ludo(QMainWindow):
             player = Player(name, color, color_name, self) if is_human else Player(name, color, color_name, self)
             player.continue_game.connect(self.setCurrentPlayer)
             player.game_won.connect(self.finished)
-            player.draw_dice.connect(self.drawDiceWidget)
             player.update_possible_moves_flag.connect(self.updatePossibleMovesFlag)
 
             start_fields = self.board.getStartField(index)
@@ -250,7 +248,8 @@ class Ludo(QMainWindow):
         if not self.possible:
             _, color_name = self.current_player.getColor()
             msg = "{0} ({1}): Sorry! No valid moves possible!".format(self.current_player.getName(), color_name)
-            self.status_label.setText(msg)
+            self.statusBar().showMessage(msg)
+        self.drawDiceWidget(self.current_player.getDice())
 
     def activatePlayerFigures(self, dice_value):
         # first disable all fgures
@@ -258,7 +257,7 @@ class Ludo(QMainWindow):
             figure.setEnabled(False)
         # if no moves possible, move on to next player
         if not self.possible:
-            self.current_player.continue_game.emit([False, 0])
+            self.setCurrentPlayer([False, 0])
             return
         # try enabling figures of current player
         for figure in self.current_player.getFigures():
@@ -293,6 +292,7 @@ class Ludo(QMainWindow):
         return any_moves_possible
 
     def setCurrentPlayer(self, data):
+        print(self.current_player.color_name)
         is_active, bonus_moves = data
         if bonus_moves > 0:
             self.possible = False
@@ -300,7 +300,9 @@ class Ludo(QMainWindow):
             self.dice.resetDice()
             self.dice.roll()
             return
-        if not is_active:
+        if is_active:
+            self.drawDiceWidget(self.current_player.getDice())
+        else:
             self.current_player.setEnabled(False)
             self.current_player.dice = []
             self.removeCurrentDiceWidget()

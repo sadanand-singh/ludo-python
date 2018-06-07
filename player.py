@@ -5,7 +5,6 @@ from gui import *
 
 class Player(QObject):
     continue_game = pyqtSignal(list)
-    draw_dice = pyqtSignal(list)
     game_won = pyqtSignal()
     update_possible_moves_flag = pyqtSignal()
     def __init__(self, name, color, color_name, parent=None):
@@ -49,7 +48,6 @@ class Player(QObject):
         if self.is_active:
             self.dice += dice
             self.update_possible_moves_flag.emit()
-            self.draw_dice.emit(self.dice)
 
     def setEnabled(self, enable):
         self.is_active = enable
@@ -97,9 +95,7 @@ class Player(QObject):
             self.bonus_moves -= 1
             self.is_active = True
             self.continue_game.emit([True, 1])
-            self.draw_dice.emit(self.dice)
             return
         else:
             self.continue_game.emit([self.is_active, 0])
-            self.draw_dice.emit(self.dice)
             return
