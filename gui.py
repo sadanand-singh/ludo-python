@@ -53,7 +53,7 @@ class DiceWidget(QGraphicsPixmapItem):
             if len(self.dice) > 2 and all([d==6 for d in self.dice[-3:]]):
                 self.dice = self.dice[:-3]
                 self.c.three_sixes_message.emit()
-            self.delay(1)
+            Timer.delay()
             self.roll()
         else:
             self.enabled = False
@@ -75,7 +75,12 @@ class DiceWidget(QGraphicsPixmapItem):
     def value(self):
         return self.dice
 
-    def delay(self, time_in_sec=1.0):
+class Timer:
+    def __init__():
+        self.time = 1.0
+
+    @classmethod
+    def delay(cls, time_in_sec=1.0):
         dice_time = QTime.currentTime().addSecs(time_in_sec)
         while QTime.currentTime() < dice_time:
             QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
